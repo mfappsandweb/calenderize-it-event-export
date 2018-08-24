@@ -2,7 +2,7 @@
 /**
  * Plugin Name:    Calenderize It Event Export
  * Description:    Export Calenderize It events into HTML file.
- * Version:        0.2.3
+ * Version:        0.2.4
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -12,7 +12,7 @@
 /**
  * Define plugin version
  */ 
-define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.2.3');
+define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.2.4');
 
 /**
  * Create plugin wp-admin page
@@ -25,7 +25,10 @@ class Calenderize_It_Export_Events
      * Construct the export event class
      */
     public function __construct($start_date, $end_date) {
+        // Log object creation and data
         $this->console_log("Creating export event object");
+        $this->console_log($start_date);
+        $this->console_log($end_date);
         $this->get_event_list($start_date, $end_date);
     }
 
@@ -89,18 +92,17 @@ class Calenderize_It_Export_Events
         $end_date = new DateTime($end_date);
         // WordPress Query arguments
         $args = array(
-            'date_query' => array(
-                'after' => $start_date->format('F jS, Y'),
-                'before' => $end_date->format('F jS, Y'),
-                'inclusive' => true,
-            ),
             'meta_type'      => 'DATETIME',
             'meta_key'       => 'fc_start',
             'posts_per_page' => -1,
             'post_status'=>'publish',
             'post_type' => array( 'events' ),
         );
+        // Log WP Query arguments
+        $this->console_log($args);
         $eventlist = new WP_Query($args);
+        // Log WP Query result
+        $this->console_log($eventlist);
 
         if( $eventlist->have_posts() ) {
             $events = $this->prepare_events_post($eventlist);
