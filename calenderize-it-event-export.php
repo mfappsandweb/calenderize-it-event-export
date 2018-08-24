@@ -2,7 +2,7 @@
 /**
  * Plugin Name:    Calenderize It Event Export
  * Description:    Export Calenderize It events into HTML file.
- * Version:        0.2.4
+ * Version:        0.2.5
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -12,7 +12,7 @@
 /**
  * Define plugin version
  */ 
-define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.2.4');
+define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.2.5');
 
 /**
  * Create plugin wp-admin page
@@ -22,6 +22,12 @@ add_action( 'admin_menu', array( 'Calenderize_It_Export_Events', 'create_admin_p
 class Calenderize_It_Export_Events
 {
     /**
+     * Declare global date options
+     */
+    private $start_date;
+    private $end_date;
+
+    /**
      * Construct the export event class
      */
     public function __construct($start_date, $end_date) {
@@ -29,7 +35,11 @@ class Calenderize_It_Export_Events
         $this->console_log("Creating export event object");
         $this->console_log($start_date);
         $this->console_log($end_date);
-        $this->get_event_list($start_date, $end_date);
+        // Set global date options
+        $this->start_date = $start_date;
+        $this->end_date = $end_date;
+        // Get events
+        $this->get_event_list();
     }
 
     /**
@@ -85,11 +95,7 @@ class Calenderize_It_Export_Events
     /**
      * Get event list from start to end dates
      */
-    public function get_event_list($start_date = "2018-08-25", $end_date = "2018-09-25"){
-        // Format start date
-        $start_date = new DateTime($start_date);
-        // Format end date
-        $end_date = new DateTime($end_date);
+    public function get_event_list(){
         // WordPress Query arguments
         $args = array(
             'meta_type'      => 'DATETIME',
@@ -100,10 +106,12 @@ class Calenderize_It_Export_Events
         );
         // Log WP Query arguments
         $this->console_log($args);
+        // Get events
         $eventlist = new WP_Query($args);
         // Log WP Query result
         $this->console_log($eventlist);
 
+        // If events are found, prepare events, build HTML
         if( $eventlist->have_posts() ) {
             $events = $this->prepare_events_post($eventlist);
             $this->build_event_html($events);
@@ -114,6 +122,7 @@ class Calenderize_It_Export_Events
      * Build HTML file of events
      */
     private function build_event_html($events) {
+        // Log prepared events
         $this->console_log($events);
     }
 
