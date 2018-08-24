@@ -2,7 +2,7 @@
 /**
  * Plugin Name:    Calenderize It Event Export
  * Description:    Export Calenderize It events into HTML file.
- * Version:        0.2.5
+ * Version:        0.3.1
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -12,7 +12,7 @@
 /**
  * Define plugin version
  */ 
-define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.2.5');
+define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.3.1');
 
 /**
  * Create plugin wp-admin page
@@ -124,7 +124,46 @@ class Calenderize_It_Export_Events
     private function build_event_html($events) {
         // Log prepared events
         $this->console_log($events);
+        foreach($events as $event) {
+            $this->display_event($event);
+        }
     }
+
+    /**
+     * Write event HTML
+     */
+    private function display_event($event) { ?>
+        <a href="<?php echo $event['permalink']; ?>"  class="masonryitem">
+            <div class="item <?php echo $event['section_name']; ?>">
+                <div class="image-wrapper">
+                    <img src="<?php if(!empty($event['post_thumbnail'])) echo $event['post_thumbnail']; else echo get_template_directory_uri().'/assets/images/common/placeholder.png' ?>" />
+                </div>
+                <div class="date">
+                    <div class="month"><?php echo date('M',strtotime($event['startdate'])); ?></div>
+                    <div class="day"><?php echo date('d',strtotime($event['startdate'])); ?></div></div>
+                <div class="title"><?php echo $event['title']; ?></div>
+                <div class="time"><?php
+                    if ($event['starttime'] === null && $event['endtime'] === null) {
+                        if ($event['startdate']==$event['enddate']) {
+                            echo date('d M',strtotime($event['startdate']));
+                        } else {
+                            echo date('d M',strtotime($event['startdate'])) . ' to ' . date('d M', strtotime($event['enddate']));
+                        }
+                    } else {
+                        if($event['startdate']==$event['enddate'])
+                        {
+                            echo date('d M',strtotime($event['startdate'])) . ', '. date('g:ia',strtotime($event['starttime'])).' to '.date('g:ia',strtotime($event['endtime']));
+                        }
+                        else
+                        {
+                            echo '<div>'.date('d M',strtotime($event['startdate'])).', '.date('g:ia',strtotime($event['starttime'])).' to</div><div>'.date('d M',strtotime($event['enddate'])).', '.date('g:ia',strtotime($event['endtime'])).'</div>';
+                        }
+                    }
+                    ?></div>
+                <div class="excerpt"><p><?php echo $event['excerpt'] ?></p></div>
+            </div>
+        </a>
+    <?php }
 
     /**
      * Prepare events array
@@ -146,7 +185,7 @@ class Calenderize_It_Export_Events
                 $section_name="student-development";
             elseif(has_term('student-care-events','calendar'))
                 $section_name="student-care";
-            if(strtotime("today")<=strtotime($enddate))
+            if(strtotime($startdate)>=strtotime($this->start_date) && strtotime($startdate)<=strtotime($this->end_date))
             {
                 array_push($result,array('permalink'=>get_the_permalink(),
                                          'title'=>get_the_title(),
