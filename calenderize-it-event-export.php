@@ -2,7 +2,7 @@
 /**
  * Plugin Name:    Calenderize It Event Export
  * Description:    Export Calenderize It events into HTML file.
- * Version:        0.2.1
+ * Version:        0.2.2
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -12,7 +12,7 @@
 /**
  * Define plugin version
  */ 
-define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.2.1');
+define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.2.2');
 
 /**
  * Create plugin wp-admin page
@@ -24,11 +24,12 @@ class Calenderize_It_Export_Events
     /**
      * Construct the export event class
      */
-    public function __construct() {
+    public function __construct($start_date, $end_date) {
+        $this->get_event_list($start_date, $end_date);
     }
 
     /**
-     * Add export page
+     * Create HTML for admin page form
      */
     public function create_admin_page_html() {
         // Set today's date
@@ -57,7 +58,15 @@ class Calenderize_It_Export_Events
             </form>
         </div>
         <?php
+        if( isset ( $_POST ) ) {
+            if( isset($_POST['start-date']) && isset($_POST['end-date']) ) {
+                new Calenderize_It_Export_Events($_POST['start-date'], $_POST['end-date']);
+            }
+        }
     }
+    /**
+     * Hook add wp-admin plugin page
+     */
     public function create_admin_page() {
         // Add page under "Tools"
         add_management_page(
