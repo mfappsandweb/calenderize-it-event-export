@@ -2,7 +2,7 @@
 /**
  * Plugin Name:    Calenderize It Event Export
  * Description:    Export Calenderize It events into HTML file.
- * Version:        0.2.2
+ * Version:        0.2.3
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -12,7 +12,7 @@
 /**
  * Define plugin version
  */ 
-define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.2.2');
+define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.2.3');
 
 /**
  * Create plugin wp-admin page
@@ -25,6 +25,7 @@ class Calenderize_It_Export_Events
      * Construct the export event class
      */
     public function __construct($start_date, $end_date) {
+        $this->console_log("Creating export event object");
         $this->get_event_list($start_date, $end_date);
     }
 
@@ -111,7 +112,7 @@ class Calenderize_It_Export_Events
      * Build HTML file of events
      */
     private function build_event_html($events) {
-        var_dump($events);
+        $this->console_log($events);
     }
 
     /**
@@ -154,6 +155,15 @@ class Calenderize_It_Export_Events
         });
     
         return $result;
+    }
+
+    /**
+     * HTML Console log for testing
+     */
+    private function console_log($log) {
+        echo '<script>';
+        echo 'console.log('. json_encode( $log ) .')';
+        echo '</script>';
     }
 }
 ?>
