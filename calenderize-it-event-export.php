@@ -2,7 +2,7 @@
 /**
  * Plugin Name:    Calenderize It Event Export
  * Description:    Export Calenderize It events into HTML file.
- * Version:        0.3.1
+ * Version:        0.4.1
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -12,7 +12,7 @@
 /**
  * Define plugin version
  */ 
-define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.3.1');
+define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.4.1');
 
 /**
  * Create plugin wp-admin page
@@ -417,7 +417,7 @@ var cspml_vars = {"ajax_url":"https:\/\/project1095.simge.edu.sg\/wp-admin\/admi
                                          'enddate'=>$enddate,
                                          'starttime'=>$starttime,
                                          'endtime'=>$endtime,
-                                         'excerpt'=>get_the_excerpt()
+                                         'excerpt'=>preg_replace("~\[[0-9a-zA-Z_\\\/]+\]~","",get_the_excerpt())
                 ));
             }
         endwhile;
