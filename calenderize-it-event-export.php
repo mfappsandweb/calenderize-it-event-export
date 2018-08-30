@@ -2,7 +2,7 @@
 /**
  * Plugin Name:    Calenderize It Event Export
  * Description:    Export Calenderize It events into HTML file.
- * Version:        0.5.1
+ * Version:        0.7.1
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -12,7 +12,7 @@
 /**
  * Define plugin version
  */ 
-define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.5.1');
+define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.7.1');
 
 /**
  * Create plugin wp-admin page
@@ -150,6 +150,12 @@ class Calenderize_It_Export_Events
         // Log prepared events
         $this->console_log($events);
         $event_file = $this->make_event_file();
+        // Test file download link
+        $file_url = "//".$_SERVER['HTTP_HOST']."/wp-content/uploads/calendarize-it-event-export/".$this->filename;
+
+        // Check POST vars
+        var_dump($_POST);
+
         ?>
         <link rel='stylesheet' id='cspm_font-css'  href='//fonts.googleapis.com/css?family=Source+Sans+Pro%3A400%2C200%2C200italic%2C300%2C300italic%2C400italic%2C600%2C600italic%2C700%2C700italic&#038;subset=latin%2Cvietnamese%2Clatin-ext&#038;ver=4.9.7' type='text/css' media='all' />
         <link rel='stylesheet' id='cspm_icheck_css-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/icheck/polaris/polaris.min.css?ver=2.8.4' type='text/css' media='all' />
@@ -274,6 +280,24 @@ class Calenderize_It_Export_Events
         <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/wp-embed.min.js?ver=4.9.7'></script>
         <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/js_composer/assets/js/dist/js_composer_front.min.js?ver=5.0.1'></script>
         <?php
+
+        if( $_POST['export_events'] == 'Download' ) {
+            ?>
+            <script>
+                $(document).ready(function() {
+                    function downloadFile(uri) {
+                        // Create <a> tag
+                        var link = "<a id='download-event-file' href='"+uri+"' download='<?php echo $this->filename; ?>' target='_blank' style='display: block;'><?php echo $this->filename; ?></a>";
+                        // Append <a> tag
+                        $("body").append(link);
+                    }
+                    downloadFile("<?php echo $file_url; ?>");
+                    console.log("Clicking link");
+                    document.getElementById('download-event-file').click();
+                })
+            </script>
+            <?php
+        }
     }
 
     /**
