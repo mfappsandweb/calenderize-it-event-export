@@ -27,7 +27,7 @@ class Calenderize_It_Export_Events
      */
     private $start_date;
     private $end_date;
-    private $plugin_file_dir;
+    private $filename;
 
     /**
      * Construct the export event class
@@ -48,9 +48,20 @@ class Calenderize_It_Export_Events
      * Make file download dir
      */
     public function make_download_dir() {
-        $dir = wp_upload_dir()['basedir'] . '/calenderize-it-event-export';
+        $dir = wp_upload_dir()['basedir'] . '/calendarize-it-event-export';
         wp_mkdir_p($dir);
-        $this->plugin_file_dir = $dir;
+    }
+    
+    /**
+     * Create event file for writing and pass back file handle
+     */
+    private function make_event_file() {
+        // File path format: WP uploads directory -> calenderize-it-event-export sub-folder -> event export specific file
+        $this->filename = "event-" . $this->start_date."-".$this->end_date.".html";
+        $event_file_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/" . $this->filename;
+        // Log file path after creation
+        $this->console_log("Event file path: ".$event_file_path);
+        return fopen($event_file_path,"w");
     }
 
     /**
@@ -138,6 +149,7 @@ class Calenderize_It_Export_Events
     private function build_event_html($events) {
         // Log prepared events
         $this->console_log($events);
+        $event_file = $this->make_event_file();
         ?>
         <link rel='stylesheet' id='cspm_font-css'  href='//fonts.googleapis.com/css?family=Source+Sans+Pro%3A400%2C200%2C200italic%2C300%2C300italic%2C400italic%2C600%2C600italic%2C700%2C700italic&#038;subset=latin%2Cvietnamese%2Clatin-ext&#038;ver=4.9.7' type='text/css' media='all' />
         <link rel='stylesheet' id='cspm_icheck_css-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/icheck/polaris/polaris.min.css?ver=2.8.4' type='text/css' media='all' />
