@@ -79,7 +79,10 @@ class Calenderize_It_Export_Events
                         </td>
                     </tr>
                 </table>
-                <p class="submit"><input type="submit" name="export_events" id="export_events" class="button-primary" value="Download" /></p>
+                <p class="submit">
+                    <input type="submit" name="export_events" id="export_events" class="button-primary" value="Preview" />
+                    <input type="submit" name="export_events" id="export_events" class="button-primary" value="Download" />
+                </p>
             </form>
         </div>
         <?php
