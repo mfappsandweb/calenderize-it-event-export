@@ -153,9 +153,6 @@ class Calenderize_It_Export_Events
         // Test file download link
         $file_url = "//".$_SERVER['HTTP_HOST']."/wp-content/uploads/calendarize-it-event-export/".$this->filename;
 
-        // Check POST vars
-        var_dump($_POST);
-
         ?>
         <link rel='stylesheet' id='cspm_font-css'  href='//fonts.googleapis.com/css?family=Source+Sans+Pro%3A400%2C200%2C200italic%2C300%2C300italic%2C400italic%2C600%2C600italic%2C700%2C700italic&#038;subset=latin%2Cvietnamese%2Clatin-ext&#038;ver=4.9.7' type='text/css' media='all' />
         <link rel='stylesheet' id='cspm_icheck_css-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/icheck/polaris/polaris.min.css?ver=2.8.4' type='text/css' media='all' />
