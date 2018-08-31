@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name:    Calenderize It Event Export
- * Description:    Export Calenderize It events into HTML file.
- * Version:        0.8.1
+ * Plugin Name:    Calenderize it! Event Export
+ * Description:    Export Calenderize it! events into HTML file.
+ * Version:        0.8.2
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -12,10 +12,10 @@
 /**
  * Define plugin version
  */ 
-define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.8.1');
+define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.8.2');
 
 /**
- * Create plugin wp-admin page
+ * Create plugin wp-admin page and plugin directory
  */
 add_action( 'admin_menu', array( 'Calenderize_It_Export_Events', 'create_admin_page' ) );
 register_activation_hook( __FILE__, array( 'Calenderize_It_Export_Events', 'make_download_dir' ) );
@@ -35,8 +35,6 @@ class Calenderize_It_Export_Events
     public function __construct($start_date, $end_date) {
         // Log object creation and data
         $this->console_log("Creating export event object");
-        //$this->console_log($start_date);
-        //$this->console_log($end_date);
         // Set global date options
         $this->start_date = $start_date;
         $this->end_date = $end_date;
@@ -108,10 +106,10 @@ class Calenderize_It_Export_Events
     public function create_admin_page() {
         // Add page under "Tools"
         add_management_page(
-            'Calenderize It Event Export',
-            'Calenderize It Event Export',
+            'Calenderize it! Event Export',
+            'Calenderize it! Event Export',
             'publish_events',
-            'ciee',
+            'calenderize-it-event-export',
             array( 'Calenderize_It_Export_Events', 'create_admin_page_html' )
         );
     }
@@ -128,12 +126,8 @@ class Calenderize_It_Export_Events
             'post_status'=>'publish',
             'post_type' => array( 'events' ),
         );
-        // Log WP Query arguments
-        //$this->console_log($args);
         // Get events
         $eventlist = new WP_Query($args);
-        // Log WP Query result
-        //$this->console_log($eventlist);
 
         // If events are found, prepare events, build HTML
         if( $eventlist->have_posts() ) {
@@ -146,8 +140,7 @@ class Calenderize_It_Export_Events
      * Build HTML file of events
      */
     private function build_event_html($events) {
-        // Log prepared events
-        $this->console_log($events);
+        // Get event file handle
         $event_file = $this->make_event_file();
 
         // Get file download link
