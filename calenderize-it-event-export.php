@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name:    Calenderize It Event Export
- * Description:    Export Calenderize It events into HTML file.
- * Version:        0.7.1
+ * Plugin Name:    Calenderize it! Event Export
+ * Description:    Export Calenderize it! events into HTML file.
+ * Version:        0.8.2
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -12,10 +12,10 @@
 /**
  * Define plugin version
  */ 
-define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.7.1');
+define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.8.2');
 
 /**
- * Create plugin wp-admin page
+ * Create plugin wp-admin page and plugin directory
  */
 add_action( 'admin_menu', array( 'Calenderize_It_Export_Events', 'create_admin_page' ) );
 register_activation_hook( __FILE__, array( 'Calenderize_It_Export_Events', 'make_download_dir' ) );
@@ -35,8 +35,6 @@ class Calenderize_It_Export_Events
     public function __construct($start_date, $end_date) {
         // Log object creation and data
         $this->console_log("Creating export event object");
-        //$this->console_log($start_date);
-        //$this->console_log($end_date);
         // Set global date options
         $this->start_date = $start_date;
         $this->end_date = $end_date;
@@ -59,8 +57,6 @@ class Calenderize_It_Export_Events
         // File path format: WP uploads directory -> calenderize-it-event-export sub-folder -> event export specific file
         $this->filename = "event-" . $this->start_date."-".$this->end_date.".html";
         $event_file_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/" . $this->filename;
-        // Log file path after creation
-        $this->console_log("Event file path: ".$event_file_path);
         return fopen($event_file_path,"w");
     }
 
@@ -103,16 +99,17 @@ class Calenderize_It_Export_Events
             }
         }
     }
+
     /**
      * Hook add wp-admin plugin page
      */
     public function create_admin_page() {
         // Add page under "Tools"
         add_management_page(
-            'Calenderize It Event Export',
-            'Calenderize It Event Export',
+            'Calenderize it! Event Export',
+            'Calenderize it! Event Export',
             'publish_events',
-            'ciee',
+            'calenderize-it-event-export',
             array( 'Calenderize_It_Export_Events', 'create_admin_page_html' )
         );
     }
@@ -129,12 +126,8 @@ class Calenderize_It_Export_Events
             'post_status'=>'publish',
             'post_type' => array( 'events' ),
         );
-        // Log WP Query arguments
-        //$this->console_log($args);
         // Get events
         $eventlist = new WP_Query($args);
-        // Log WP Query result
-        //$this->console_log($eventlist);
 
         // If events are found, prepare events, build HTML
         if( $eventlist->have_posts() ) {
@@ -147,84 +140,81 @@ class Calenderize_It_Export_Events
      * Build HTML file of events
      */
     private function build_event_html($events) {
-        // Log prepared events
-        $this->console_log($events);
+        // Get event file handle
         $event_file = $this->make_event_file();
-        // Test file download link
-        $file_url = "//".$_SERVER['HTTP_HOST']."/wp-content/uploads/calendarize-it-event-export/".$this->filename;
 
-        // Check POST vars
-        var_dump($_POST);
+        // Get file download link
+        $file_url = get_site_url()."/wp-content/uploads/calendarize-it-event-export/".$this->filename;
 
-        ?>
-        <link rel='stylesheet' id='cspm_font-css'  href='//fonts.googleapis.com/css?family=Source+Sans+Pro%3A400%2C200%2C200italic%2C300%2C300italic%2C400italic%2C600%2C600italic%2C700%2C700italic&#038;subset=latin%2Cvietnamese%2Clatin-ext&#038;ver=4.9.7' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspm_icheck_css-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/icheck/polaris/polaris.min.css?ver=2.8.4' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspm_bootstrap_css-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/bootstrap.min.css?ver=2.8.4' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspm_carousel_css-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/jcarousel.min.css?ver=2.8.4' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspm_loading_css-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/loading.min.css?ver=2.8.4' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspm_mCustomScrollbar_css-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/jquery.mCustomScrollbar.min.css?ver=2.8.4' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspm_rangeSlider_css-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/ion.rangeSlider.min.css?ver=2.8.4' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspm_rangeSlider_skin_css-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/ion.rangeSlider.skinFlat.min.css?ver=2.8.4' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspm_nprogress_css-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/nprogress.min.css?ver=2.8.4' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspm_animate_css-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/animate.min.css?ver=2.8.4' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspm_map_css-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/style.min.css?ver=2.8.4' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspml_selectize-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/css/min/selectize.min.css?ver=1.0' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspml_selectize_skin-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/css/min/selectize.bootstrap3.min.css?ver=1.0' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspml_ion_check_radio-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/css/min/ion.checkRadio.min.css?ver=1.0' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspml_ion_check_radio_skin-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/css/min/ion.checkRadio.html5.min.css?ver=1.0' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspml_spinner-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/css/min/bootstrap-spinner.min.css?ver=1.0' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspml_hover-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/css/min/hover.min.css?ver=1.0' type='text/css' media='all' />
-        <link rel='stylesheet' id='cspml_styles-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/css/min/style.min.css?ver=1.0' type='text/css' media='all' />
-        <link rel='stylesheet' id='rs-plugin-settings-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/revslider/public/assets/css/settings.css?ver=5.4.1' type='text/css' media='all' />
-        <style id='rs-plugin-settings-inline-css' type='text/css'>
+        $file_html = '
+        <link rel="stylesheet" id="cspm_font-css"  href="//fonts.googleapis.com/css?family=Source+Sans+Pro%3A400%2C200%2C200italic%2C300%2C300italic%2C400italic%2C600%2C600italic%2C700%2C700italic&#038;subset=latin%2Cvietnamese%2Clatin-ext&#038;ver=4.9.7" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspm_icheck_css-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/icheck/polaris/polaris.min.css?ver=2.8.4" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspm_bootstrap_css-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/bootstrap.min.css?ver=2.8.4" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspm_carousel_css-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/jcarousel.min.css?ver=2.8.4" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspm_loading_css-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/loading.min.css?ver=2.8.4" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspm_mCustomScrollbar_css-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/jquery.mCustomScrollbar.min.css?ver=2.8.4" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspm_rangeSlider_css-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/ion.rangeSlider.min.css?ver=2.8.4" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspm_rangeSlider_skin_css-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/ion.rangeSlider.skinFlat.min.css?ver=2.8.4" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspm_nprogress_css-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/nprogress.min.css?ver=2.8.4" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspm_animate_css-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/animate.min.css?ver=2.8.4" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspm_map_css-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/style.min.css?ver=2.8.4" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspml_selectize-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/css/min/selectize.min.css?ver=1.0" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspml_selectize_skin-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/css/min/selectize.bootstrap3.min.css?ver=1.0" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspml_ion_check_radio-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/css/min/ion.checkRadio.min.css?ver=1.0" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspml_ion_check_radio_skin-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/css/min/ion.checkRadio.html5.min.css?ver=1.0" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspml_spinner-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/css/min/bootstrap-spinner.min.css?ver=1.0" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspml_hover-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/css/min/hover.min.css?ver=1.0" type="text/css" media="all" />
+        <link rel="stylesheet" id="cspml_styles-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/css/min/style.min.css?ver=1.0" type="text/css" media="all" />
+        <link rel="stylesheet" id="rs-plugin-settings-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/revslider/public/assets/css/settings.css?ver=5.4.1" type="text/css" media="all" />
+        <style id="rs-plugin-settings-inline-css" type="text/css">
             #rs-demo-id {}
         </style>
-        <link rel='stylesheet' id='custom-jquery-ui-css'  href='https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/stylesheets/jquery-ui.min.css?ver=1.0.0' type='text/css' media='all' />
-        <link rel='stylesheet' id='custom-jquery-ui-theme-css'  href='https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/stylesheets/jquery-ui.theme.min.css?ver=1.0.0' type='text/css' media='all' />
-        <link rel='stylesheet' id='selectize-css-css'  href='https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/stylesheets/selectize.default.css?ver=1.0.0' type='text/css' media='all' />
-        <link rel='stylesheet' id='main-stylesheet-css'  href='https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/stylesheets/theme.css?ver=1.0.17' type='text/css' media='all' />
-        <link rel='stylesheet' id='dashicons-css'  href='https://project1095.simge.edu.sg/wp-includes/css/dashicons.min.css?ver=4.9.7' type='text/css' media='all' />
-        <link rel='stylesheet' id='zoom-instagram-widget-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/instagram-widget-by-wpzoom/css/instagram-widget.css?ver=1.2.10' type='text/css' media='all' />
-        <link rel='stylesheet' id='js_composer_front-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/js_composer/assets/css/js_composer.min.css?ver=5.0.1' type='text/css' media='all' />
-        <link rel='stylesheet' id='js_composer_custom_css-css'  href='//project1095.simge.edu.sg/wp-content/uploads/js_composer/custom.css?ver=5.0.1' type='text/css' media='all' />
-        <link rel='stylesheet' id='rhc-print-css-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/css/print.css?ver=1.0.0' type='text/css' media='all' />
-        <link rel='stylesheet' id='calendarizeit-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/css/frontend.min.css?ver=4.0.8.4' type='text/css' media='all' />
-        <link rel='stylesheet' id='rhc-last-minue-css'  href='https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/css/last_minute_fixes.css?ver=1.0.10' type='text/css' media='all' />
-        <script type='text/javascript' src='//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js?ver=2.1.0'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/revslider/public/assets/js/jquery.themepunch.tools.min.js?ver=5.4.1'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/revslider/public/assets/js/jquery.themepunch.revolution.min.js?ver=5.4.1'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/instagram-widget-by-wpzoom/js/instagram-widget.js?ver=1.2.10'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/bootstrap.min.js?ver=3.0.0'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/bootstrap-select.js?ver=1.0.2'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/core.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/widget.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/accordion.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/mouse.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/slider.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/resizable.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/draggable.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/button.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/position.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/dialog.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/tabs.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/sortable.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/droppable.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/datepicker.min.js?ver=1.11.4'></script>
-        <script type='text/javascript'>
+        <link rel="stylesheet" id="custom-jquery-ui-css"  href="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/stylesheets/jquery-ui.min.css?ver=1.0.0" type="text/css" media="all" />
+        <link rel="stylesheet" id="custom-jquery-ui-theme-css"  href="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/stylesheets/jquery-ui.theme.min.css?ver=1.0.0" type="text/css" media="all" />
+        <link rel="stylesheet" id="selectize-css-css"  href="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/stylesheets/selectize.default.css?ver=1.0.0" type="text/css" media="all" />
+        <link rel="stylesheet" id="main-stylesheet-css"  href="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/stylesheets/theme.css?ver=1.0.17" type="text/css" media="all" />
+        <link rel="stylesheet" id="dashicons-css"  href="https://project1095.simge.edu.sg/wp-includes/css/dashicons.min.css?ver=4.9.7" type="text/css" media="all" />
+        <link rel="stylesheet" id="zoom-instagram-widget-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/instagram-widget-by-wpzoom/css/instagram-widget.css?ver=1.2.10" type="text/css" media="all" />
+        <link rel="stylesheet" id="js_composer_front-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/js_composer/assets/css/js_composer.min.css?ver=5.0.1" type="text/css" media="all" />
+        <link rel="stylesheet" id="js_composer_custom_css-css"  href="//project1095.simge.edu.sg/wp-content/uploads/js_composer/custom.css?ver=5.0.1" type="text/css" media="all" />
+        <link rel="stylesheet" id="rhc-print-css-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/css/print.css?ver=1.0.0" type="text/css" media="all" />
+        <link rel="stylesheet" id="calendarizeit-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/css/frontend.min.css?ver=4.0.8.4" type="text/css" media="all" />
+        <link rel="stylesheet" id="rhc-last-minue-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/css/last_minute_fixes.css?ver=1.0.10" type="text/css" media="all" />
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js?ver=2.1.0"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/revslider/public/assets/js/jquery.themepunch.tools.min.js?ver=5.4.1"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/revslider/public/assets/js/jquery.themepunch.revolution.min.js?ver=5.4.1"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/instagram-widget-by-wpzoom/js/instagram-widget.js?ver=1.2.10"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/bootstrap.min.js?ver=3.0.0"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/bootstrap-select.js?ver=1.0.2"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/core.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/widget.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/accordion.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/mouse.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/slider.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/resizable.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/draggable.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/button.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/position.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/dialog.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/tabs.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/sortable.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/droppable.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/datepicker.min.js?ver=1.11.4"></script>
+        <script type="text/javascript">
             jQuery(document).ready(function(jQuery){jQuery.datepicker.setDefaults({"closeText":"Close","currentText":"Today","monthNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"monthNamesShort":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"nextText":"Next","prevText":"Previous","dayNames":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"dayNamesShort":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"dayNamesMin":["S","M","T","W","T","F","S"],"dateFormat":"MM d, yy","firstDay":1,"isRTL":false});});
         </script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/menu.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/wp-a11y.min.js?ver=4.9.7'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/autocomplete.min.js?ver=1.11.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/deprecated.js?ver=bundled-jquery-ui'></script>
-        <script type='text/javascript'>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/menu.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/wp-a11y.min.js?ver=4.9.7"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/autocomplete.min.js?ver=1.11.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/deprecated.js?ver=bundled-jquery-ui"></script>
+        <script type="text/javascript">
             /* <![CDATA[ */
             var RHC = {"ajaxurl":"https:\/\/project1095.simge.edu.sg\/","mobile_width":"480","last_modified":"43ed41870e32fabaaf915fe1c44b7b7f","tooltip_details":[],"visibility_check":"1","gmt_offset":"8","disable_event_link":"0"};
             /* ]]> */
         </script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/frontend.min.js?ver=4.3.4.6'></script>
-        <script type='text/javascript' src='https://maps.google.com/maps/api/js?libraries=places&#038;key=AIzaSyCRGO4ipIZyiHggm4boPgqG1RAOamBkjQM&#038;ver=3.0'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/rhc_gmap3.js?ver=1.0.1'></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/frontend.min.js?ver=4.3.4.6"></script>
+        <script type="text/javascript" src="https://maps.google.com/maps/api/js?libraries=places&#038;key=AIzaSyCRGO4ipIZyiHggm4boPgqG1RAOamBkjQM&#038;ver=3.0"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/rhc_gmap3.js?ver=1.0.1"></script>
         <!--[if lte IE 9]><link rel="stylesheet" type="text/css" href="https://project1095.simge.edu.sg/wp-content/plugins/js_composer/assets/css/vc_lte_ie9.min.css" media="screen"><![endif]-->
         <script type="text/javascript">var _CSPM_DONE = {}; var _CSPM_MAP_RESIZED = {};</script>
         <style type="text/css">.details_container{width:250px;height:150px;}.item_img{width:200px; height:149px;float:left;}.details_btn{left:170px;top:100px;}.details_title{width:250px;}.details_infos{width:250px;font-size:0.8em;
@@ -234,52 +224,54 @@ class Calenderize_It_Export_Events
         <script src="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/common/modernizr.min.js"></script>
         <script src="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/common/masonry.min.js"></script>
         <section id="events">
-            <div class="masonry">
-                <?php
+            <div class="masonry">';
                 foreach($events as $event) {
-                    $this->display_event($event);
+                    $file_html .= $this->display_event($event);
                 }
-                ?>
+        $file_html .= '
             </div>
         </section>
         <script>
-            jQuery(window).on('load', function () {
+            jQuery(window).on("load", function () {
                 var m = $(".masonry");
                 m.masonry({itemSelector: ".masonryitem"});
             });
         </script>
-        <link rel='stylesheet' id='vc_google_fonts_roboto100100italic300300italicregularitalic500500italic700700italic900900italic-css'  href='//fonts.googleapis.com/css?family=Roboto%3A100%2C100italic%2C300%2C300italic%2Cregular%2Citalic%2C500%2C500italic%2C700%2C700italic%2C900%2C900italic&#038;subset=latin&#038;ver=4.9.7' type='text/css' media='all' />
-        <script type='text/javascript' src='//maps.google.com/maps/api/js?v=3.exp&#038;key=AIzaSyDh_GglyLEDeaaV_utESbq_Wzt86Lc5zzQ&#038;language=en&#038;libraries=geometry%2Cplaces&#038;ver=4.9.7'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/gmap3.min.js?ver=2.8.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/jquery.livequery.min.js?ver=2.8.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/jquery.jcarousel.min.js?ver=2.8.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/jquery.easing.1.3.min.js?ver=2.8.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/jquery.mCustomScrollbar.min.js?ver=2.8.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/jquery.mousewheel.min.js?ver=2.8.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/jquery.icheck.min.js?v=0.9.1&#038;ver=2.8.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/nprogress.min.js?ver=2.8.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/ion.rangeSlider.min.js?ver=2.8.4'></script>
-        <script type='text/javascript'>
+        <link rel="stylesheet" id="vc_google_fonts_roboto100100italic300300italicregularitalic500500italic700700italic900900italic-css"  href="//fonts.googleapis.com/css?family=Roboto%3A100%2C100italic%2C300%2C300italic%2Cregular%2Citalic%2C500%2C500italic%2C700%2C700italic%2C900%2C900italic&#038;subset=latin&#038;ver=4.9.7" type="text/css" media="all" />
+        <script type="text/javascript" src="//maps.google.com/maps/api/js?v=3.exp&#038;key=AIzaSyDh_GglyLEDeaaV_utESbq_Wzt86Lc5zzQ&#038;language=en&#038;libraries=geometry%2Cplaces&#038;ver=4.9.7"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/gmap3.min.js?ver=2.8.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/jquery.livequery.min.js?ver=2.8.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/jquery.jcarousel.min.js?ver=2.8.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/jquery.easing.1.3.min.js?ver=2.8.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/jquery.mCustomScrollbar.min.js?ver=2.8.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/jquery.mousewheel.min.js?ver=2.8.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/jquery.icheck.min.js?v=0.9.1&#038;ver=2.8.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/nprogress.min.js?ver=2.8.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/ion.rangeSlider.min.js?ver=2.8.4"></script>
+        <script type="text/javascript">
             /* <![CDATA[ */
-            var progress_map_vars = {"ajax_url":"https:\/\/project1095.simge.edu.sg\/wp-admin\/admin-ajax.php","plugin_url":"https:\/\/project1095.simge.edu.sg\/wp-content\/plugins\/codespacing-progress-map\/","number_of_items":"","center":"41.0463196,55.5772046","zoom":"3","scrollwheel":"false","panControl":"true","mapTypeControl":"false","streetViewControl":"false","zoomControl":"true","zoomControlType":"customize","defaultMarker":"default","marker_icon":"https:\/\/s3-ap-southeast-1.amazonaws.com\/sim-1095-cdn\/wp-content\/uploads\/2017\/01\/map-marker-icon4.png","big_cluster_icon":"https:\/\/project1095.simge.edu.sg\/wp-content\/plugins\/codespacing-progress-map\/img\/big-cluster.png","big_cluster_size":"106x106","medium_cluster_icon":"https:\/\/project1095.simge.edu.sg\/wp-content\/plugins\/codespacing-progress-map\/img\/medium-cluster.png","medium_cluster_size":"75x75","small_cluster_icon":"https:\/\/project1095.simge.edu.sg\/wp-content\/plugins\/codespacing-progress-map\/img\/small-cluster.png","small_cluster_size":"57x57","cluster_text_color":"#ffffff","grid_size":"100","retinaSupport":"false","initial_map_style":"custom_style","markerAnimation":"flushing_infobox","marker_anchor_point_option":"manual","marker_anchor_point":"15,30","map_draggable":"true","min_zoom":"3","max_zoom":"19","zoom_on_doubleclick":"true","items_view":"listview","show_carousel":"true","carousel_scroll":"3","carousel_wrap":"circular","carousel_auto":"0","carousel_mode":"false","carousel_animation":"fast","carousel_easing":"linear","carousel_map_zoom":"12","scrollwheel_carousel":"false","touchswipe_carousel":"false","layout_fixed_height":"700","horizontal_item_css":"","horizontal_item_width":"450","horizontal_item_height":"150","vertical_item_css":"","vertical_item_width":"204","vertical_item_height":"290","items_background":"#fff","items_hover_background":"#fbfbfb","faceted_search_option":"true","faceted_search_multi_taxonomy_option":"true","faceted_search_input_skin":"polaris","faceted_search_input_color":"blue","faceted_search_drag_map":"no","show_posts_count":"no","fillColor":"#189AC9","fillOpacity":"0.1","strokeColor":"#189AC9","strokeOpacity":"1","strokeWeight":"1","search_form_option":"true","before_search_address":"","after_search_address":"","geo":"false","show_user":"true","user_marker_icon":"","user_map_zoom":"7","user_circle":"0","geoErrorTitle":"Give Maps permission to use your location!","geoErrorMsg":"If you can't center the map on your location, a couple of things might be going on. It's possible you denied Google Maps access to your location in the past, or your browser might have an error.","geoDeprecateMsg":"IMPORTANT NOTE: Browsers no longer supports obtaining the user's location using the HTML5 Geolocation API from pages delivered by non-secure connections. This means that the page that's making the Geolocation API call must be served from a secure context such as HTTPS.","cluster_text":"Click to view all markers in this area","count_marker_categories":"0"};
+            var progress_map_vars = {"ajax_url":"https:\/\/project1095.simge.edu.sg\/wp-admin\/admin-ajax.php","plugin_url":"https:\/\/project1095.simge.edu.sg\/wp-content\/plugins\/codespacing-progress-map\/","number_of_items":"","center":"41.0463196,55.5772046","zoom":"3","scrollwheel":"false","panControl":"true","mapTypeControl":"false","streetViewControl":"false","zoomControl":"true","zoomControlType":"customize","defaultMarker":"default","marker_icon":"https:\/\/s3-ap-southeast-1.amazonaws.com\/sim-1095-cdn\/wp-content\/uploads\/2017\/01\/map-marker-icon4.png","big_cluster_icon":"https:\/\/project1095.simge.edu.sg\/wp-content\/plugins\/codespacing-progress-map\/img\/big-cluster.png","big_cluster_size":"106x106","medium_cluster_icon":"https:\/\/project1095.simge.edu.sg\/wp-content\/plugins\/codespacing-progress-map\/img\/medium-cluster.png","medium_cluster_size":"75x75","small_cluster_icon":"https:\/\/project1095.simge.edu.sg\/wp-content\/plugins\/codespacing-progress-map\/img\/small-cluster.png","small_cluster_size":"57x57","cluster_text_color":"#ffffff","grid_size":"100","retinaSupport":"false","initial_map_style":"custom_style","markerAnimation":"flushing_infobox","marker_anchor_point_option":"manual","marker_anchor_point":"15,30","map_draggable":"true","min_zoom":"3","max_zoom":"19","zoom_on_doubleclick":"true","items_view":"listview","show_carousel":"true","carousel_scroll":"3","carousel_wrap":"circular","carousel_auto":"0","carousel_mode":"false","carousel_animation":"fast","carousel_easing":"linear","carousel_map_zoom":"12","scrollwheel_carousel":"false","touchswipe_carousel":"false","layout_fixed_height":"700","horizontal_item_css":"","horizontal_item_width":"450","horizontal_item_height":"150","vertical_item_css":"","vertical_item_width":"204","vertical_item_height":"290","items_background":"#fff","items_hover_background":"#fbfbfb","faceted_search_option":"true","faceted_search_multi_taxonomy_option":"true","faceted_search_input_skin":"polaris","faceted_search_input_color":"blue","faceted_search_drag_map":"no","show_posts_count":"no","fillColor":"#189AC9","fillOpacity":"0.1","strokeColor":"#189AC9","strokeOpacity":"1","strokeWeight":"1","search_form_option":"true","before_search_address":"","after_search_address":"","geo":"false","show_user":"true","user_marker_icon":"","user_map_zoom":"7","user_circle":"0","geoErrorTitle":"Give Maps permission to use your location!","geoErrorMsg":"If you can"t center the map on your location, a couple of things might be going on. It"s possible you denied Google Maps access to your location in the past, or your browser might have an error.","geoDeprecateMsg":"IMPORTANT NOTE: Browsers no longer supports obtaining the user"s location using the HTML5 Geolocation API from pages delivered by non-secure connections. This means that the page that"s making the Geolocation API call must be served from a secure context such as HTTPS.","cluster_text":"Click to view all markers in this area","count_marker_categories":"0"};
             /* ]]> */
         </script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/progress_map.min.js?ver=2.8.4'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/js/min/selectize.min.js?ver=1.0'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/js/min/ion.checkRadio.min.js?ver=1.0'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/js/min/jquery.spinner.min.js?ver=1.0'></script>
-        <script type='text/javascript'>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/js/min/progress_map.min.js?ver=2.8.4"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/js/min/selectize.min.js?ver=1.0"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/js/min/ion.checkRadio.min.js?ver=1.0"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/js/min/jquery.spinner.min.js?ver=1.0"></script>
+        <script type="text/javascript">
             /* <![CDATA[ */
             var cspml_vars = {"ajax_url":"https:\/\/project1095.simge.edu.sg\/wp-admin\/admin-ajax.php","plugin_url":"https:\/\/project1095.simge.edu.sg\/wp-content\/plugins\/progress-map-list-and-filter\/","show_view_options":"no","grid_cols":"cols3"};
             /* ]]> */
         </script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/js/min/progress-map-list.min.js?ver=1.0'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/common/selectize.min.js?ver=1.0.0'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/theme.js?ver=2.6.1'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/custom/wp_datatable_filter.js?ver=1.0.2'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-includes/js/wp-embed.min.js?ver=4.9.7'></script>
-        <script type='text/javascript' src='https://project1095.simge.edu.sg/wp-content/plugins/js_composer/assets/js/dist/js_composer_front.min.js?ver=5.0.1'></script>
-        <?php
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/progress-map-list-and-filter/js/min/progress-map-list.min.js?ver=1.0"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/common/selectize.min.js?ver=1.0.0"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/theme.js?ver=2.6.1"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/custom/wp_datatable_filter.js?ver=1.0.2"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/wp-embed.min.js?ver=4.9.7"></script>
+        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/js_composer/assets/js/dist/js_composer_front.min.js?ver=5.0.1"></script>
+        ';
+        // Write HTML to file and display
+        fwrite($event_file,$file_html);
+        echo $file_html;
 
         if( $_POST['export_events'] == 'Download' ) {
             ?>
@@ -303,38 +295,61 @@ class Calenderize_It_Export_Events
     /**
      * Write event HTML
      */
-    private function display_event($event) { ?>
-        <a href="<?php echo $event['permalink']; ?>"  class="masonryitem">
-            <div class="item <?php echo $event['section_name']; ?>">
-                <div class="image-wrapper">
-                    <img src="<?php if(!empty($event['post_thumbnail'])) echo $event['post_thumbnail']; else echo get_template_directory_uri().'/assets/images/common/placeholder.png' ?>" />
+    private function display_event($event) { 
+        // Set event attributes as variables for easy entry
+        $permalink = $event['permalink'];
+        $section_name = $event['section_name'];
+        if(!empty($event['post_thumbnail'])) {
+            $post_thumbnail = $event['post_thumbnail']; 
+        } else {
+            $post_thumbnail = get_template_directory_uri().'/assets/images/common/placeholder.png';
+        }
+        $month = date('M',strtotime($event['startdate']));
+        $day = date('d',strtotime($event['startdate']));
+        $title = $event['title'];
+        if ($event['starttime'] === null && $event['endtime'] === null) {
+            if ($event['startdate']==$event['enddate']) {
+                $time = date('d M',strtotime($event['startdate']));
+            } else {
+                $time = date('d M',strtotime($event['startdate'])) . ' to ' . date('d M', strtotime($event['enddate']));
+            }
+        } else {
+            if($event['startdate']==$event['enddate'])
+            {
+                $time = date('d M',strtotime($event['startdate'])) . ', '. date('g:ia',strtotime($event['starttime'])).' to '.date('g:ia',strtotime($event['endtime']));
+            }
+            else
+            {
+                $time = '<div>'.date('d M',strtotime($event['startdate'])).', '.date('g:ia',strtotime($event['starttime'])).' to</div><div>'.date('d M',strtotime($event['enddate'])).', '.date('g:ia',strtotime($event['endtime'])).'</div>';
+            }
+        }
+        $excerpt = $event['excerpt'];
+        
+        // Generate and return event HTML
+        $event_html = "
+        <a href=\"$permalink\"  class=\"masonryitem\">
+            <div class=\"item $section_name\">
+                <div class=\"image-wrapper\">
+                    <img src=\"$post_thumbnail\" />
                 </div>
-                <div class="date">
-                    <div class="month"><?php echo date('M',strtotime($event['startdate'])); ?></div>
-                    <div class="day"><?php echo date('d',strtotime($event['startdate'])); ?></div></div>
-                <div class="title"><?php echo $event['title']; ?></div>
-                <div class="time"><?php
-                    if ($event['starttime'] === null && $event['endtime'] === null) {
-                        if ($event['startdate']==$event['enddate']) {
-                            echo date('d M',strtotime($event['startdate']));
-                        } else {
-                            echo date('d M',strtotime($event['startdate'])) . ' to ' . date('d M', strtotime($event['enddate']));
-                        }
-                    } else {
-                        if($event['startdate']==$event['enddate'])
-                        {
-                            echo date('d M',strtotime($event['startdate'])) . ', '. date('g:ia',strtotime($event['starttime'])).' to '.date('g:ia',strtotime($event['endtime']));
-                        }
-                        else
-                        {
-                            echo '<div>'.date('d M',strtotime($event['startdate'])).', '.date('g:ia',strtotime($event['starttime'])).' to</div><div>'.date('d M',strtotime($event['enddate'])).', '.date('g:ia',strtotime($event['endtime'])).'</div>';
-                        }
-                    }
-                    ?></div>
-                <div class="excerpt"><p><?php echo $event['excerpt'] ?></p></div>
+                <div class=\"date\">
+                    <div class=\"month\">$month</div>
+                    <div class=\"day\">$day</div>
+                </div>
+                <div class=\"title\">$title</div>
+                <div class=\"time\">
+                $time
+                </div>
+                <div class=\"excerpt\">
+                    <p>
+                        $excerpt;
+                    </p>
+                </div>
             </div>
         </a>
-    <?php }
+        ";
+        return $event_html;
+    }
 
     /**
      * Prepare events array
