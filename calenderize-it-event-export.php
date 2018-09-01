@@ -32,7 +32,8 @@ class Calenderize_It_Export_Events
     /**
      * Construct the export event class
      */
-    public function __construct($start_date, $end_date) {
+    public function __construct($start_date, $end_date) 
+    {
         // Log object creation and data
         $this->console_log("Creating export event object");
         // Set global date options
@@ -45,7 +46,8 @@ class Calenderize_It_Export_Events
     /**
      * Make file download dir
      */
-    public function make_download_dir() {
+    public function make_download_dir() 
+    {
         $dir = wp_upload_dir()['basedir'] . '/calendarize-it-event-export';
         wp_mkdir_p($dir);
     }
@@ -53,7 +55,8 @@ class Calenderize_It_Export_Events
     /**
      * Create event file for writing and pass back file handle
      */
-    private function make_event_file() {
+    private function make_event_file() 
+    {
         // File path format: WP uploads directory -> calenderize-it-event-export sub-folder -> event export specific file
         $this->filename = "event-" . $this->start_date."-".$this->end_date.".html";
         $event_file_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/" . $this->filename;
@@ -63,9 +66,11 @@ class Calenderize_It_Export_Events
     /**
      * Create HTML for admin page form
      */
-    public function create_admin_page_html() {
+    public function create_admin_page_html() 
+    {
         // Set today's date
-        $today = new DateTime(date('Y-m-d')); 
+        $today = new DateTime(date('Y-m-d'));
+
         ?>
         <div class="wrap">
             <h1>Calenderize It Event Export</h1>
@@ -93,8 +98,10 @@ class Calenderize_It_Export_Events
             </form>
         </div>
         <?php
-        if( isset ( $_POST ) ) {
-            if( isset($_POST['start-date']) && isset($_POST['end-date']) ) {
+        if( isset ( $_POST ) ) 
+        {
+            if( isset($_POST['start-date']) && isset($_POST['end-date']) ) 
+            {
                 new Calenderize_It_Export_Events($_POST['start-date'], $_POST['end-date']);
             }
         }
@@ -103,7 +110,8 @@ class Calenderize_It_Export_Events
     /**
      * Hook add wp-admin plugin page
      */
-    public function create_admin_page() {
+    public function create_admin_page() 
+    {
         // Add page under "Tools"
         add_management_page(
             'Calenderize it! Event Export',
@@ -117,7 +125,8 @@ class Calenderize_It_Export_Events
     /**
      * Get event list from start to end dates
      */
-    public function get_event_list(){
+    public function get_event_list()
+    {
         // WordPress Query arguments
         $args = array(
             'meta_type'      => 'DATETIME',
@@ -126,11 +135,13 @@ class Calenderize_It_Export_Events
             'post_status'=>'publish',
             'post_type' => array( 'events' ),
         );
+
         // Get events
         $eventlist = new WP_Query($args);
 
         // If events are found, prepare events, build HTML
-        if( $eventlist->have_posts() ) {
+        if( $eventlist->have_posts() ) 
+        {
             $events = $this->prepare_events_post($eventlist);
             $this->build_event_html($events);
         }
@@ -139,14 +150,18 @@ class Calenderize_It_Export_Events
     /**
      * Build HTML file of events
      */
-    private function build_event_html($events) {
+    private function build_event_html($events) 
+    {
         // Get event file handle
         $event_file = $this->make_event_file();
 
         // Get file download link
         $file_url = get_site_url()."/wp-content/uploads/calendarize-it-event-export/".$this->filename;
 
+        // Save HTML header scripts to variable
         $file_html = '
+<html>
+    <head>
         <link rel="stylesheet" id="cspm_font-css"  href="//fonts.googleapis.com/css?family=Source+Sans+Pro%3A400%2C200%2C200italic%2C300%2C300italic%2C400italic%2C600%2C600italic%2C700%2C700italic&#038;subset=latin%2Cvietnamese%2Clatin-ext&#038;ver=4.9.7" type="text/css" media="all" />
         <link rel="stylesheet" id="cspm_icheck_css-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/icheck/polaris/polaris.min.css?ver=2.8.4" type="text/css" media="all" />
         <link rel="stylesheet" id="cspm_bootstrap_css-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/codespacing-progress-map/css/min/bootstrap.min.css?ver=2.8.4" type="text/css" media="all" />
@@ -223,11 +238,18 @@ class Calenderize_It_Export_Events
         <noscript><style type="text/css"> .wpb_animate_when_almost_visible { opacity: 1; }</style></noscript>		
         <script src="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/common/modernizr.min.js"></script>
         <script src="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/common/masonry.min.js"></script>
+    </head>
+    <body>
         <section id="events">
             <div class="masonry">';
-                foreach($events as $event) {
+
+                // Format each event and add to HTML variable
+                foreach($events as $event) 
+                {
                     $file_html .= $this->display_event($event);
                 }
+
+        // Add HTML footer scripts to file
         $file_html .= '
             </div>
         </section>
@@ -268,12 +290,17 @@ class Calenderize_It_Export_Events
         <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/custom/wp_datatable_filter.js?ver=1.0.2"></script>
         <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/wp-embed.min.js?ver=4.9.7"></script>
         <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/js_composer/assets/js/dist/js_composer_front.min.js?ver=5.0.1"></script>
+    </body>
+</html> 
         ';
+
         // Write HTML to file and display
         fwrite($event_file,$file_html);
         echo $file_html;
 
-        if( $_POST['export_events'] == 'Download' ) {
+        // If Download was clicked echo JavaScript to download file
+        if( $_POST['export_events'] == 'Download' ) 
+        {
             ?>
             <script>
                 $(document).ready(function() {
@@ -295,25 +322,35 @@ class Calenderize_It_Export_Events
     /**
      * Write event HTML
      */
-    private function display_event($event) { 
+    private function display_event($event) 
+    { 
         // Set event attributes as variables for easy entry
         $permalink = $event['permalink'];
         $section_name = $event['section_name'];
-        if(!empty($event['post_thumbnail'])) {
+        if( !empty($event['post_thumbnail']) ) 
+        {
             $post_thumbnail = $event['post_thumbnail']; 
-        } else {
+        } 
+        else 
+        {
             $post_thumbnail = get_template_directory_uri().'/assets/images/common/placeholder.png';
         }
-        $month = date('M',strtotime($event['startdate']));
-        $day = date('d',strtotime($event['startdate']));
+        $month = date('M', strtotime($event['startdate']));
+        $day = date('d', strtotime($event['startdate']));
         $title = $event['title'];
-        if ($event['starttime'] === null && $event['endtime'] === null) {
-            if ($event['startdate']==$event['enddate']) {
+        if ($event['starttime'] === null && $event['endtime'] === null) 
+        {
+            if ($event['startdate']==$event['enddate']) 
+            {
                 $time = date('d M',strtotime($event['startdate']));
-            } else {
+            } 
+            else 
+            {
                 $time = date('d M',strtotime($event['startdate'])) . ' to ' . date('d M', strtotime($event['enddate']));
             }
-        } else {
+        } 
+        else 
+        {
             if($event['startdate']==$event['enddate'])
             {
                 $time = date('d M',strtotime($event['startdate'])) . ', '. date('g:ia',strtotime($event['starttime'])).' to '.date('g:ia',strtotime($event['endtime']));
@@ -348,29 +385,40 @@ class Calenderize_It_Export_Events
             </div>
         </a>
         ";
+
         return $event_html;
     }
 
     /**
      * Prepare events array
      */
-    function prepare_events_post($postlist) {
+    function prepare_events_post($postlist) 
+    {
         $result = array();
+
         while ( $postlist->have_posts() ) : $postlist->the_post();
-            $temp= get_post_custom();
+            $temp = get_post_custom();
             $startdate = $temp['fc_start'][0];
             $enddate = $temp['fc_end'][0];
             $starttime = $temp['fc_start_time'][0];
             $endtime = $temp['fc_end_time'][0];
     
             if(has_term('career-development-events','calendar'))
+            {
                 $section_name="career-development";
+            }
             elseif(has_term('global-learning-events','calendar'))
+            {
                 $section_name="global-learning";
+            }
             elseif(has_term('student-development-events','calendar'))
+            {
                 $section_name="student-development";
+            }
             elseif(has_term('student-care-events','calendar'))
+            {
                 $section_name="student-care";
+            }
             if(strtotime($startdate)>=strtotime($this->start_date) && strtotime($startdate)<=strtotime($this->end_date))
             {
                 array_push($result,array('permalink'=>get_the_permalink(),
@@ -386,7 +434,8 @@ class Calenderize_It_Export_Events
             }
         endwhile;
     
-        usort($result, function($a, $b) {
+        usort($result, function($a, $b) 
+        {
             return strtotime($a['startdate']) - strtotime($b['startdate']);
         });
     
@@ -396,7 +445,8 @@ class Calenderize_It_Export_Events
     /**
      * HTML Console log for testing
      */
-    private function console_log($log) {
+    private function console_log($log) 
+    {
         echo '<script>';
         echo 'console.log('. json_encode( $log ) .')';
         echo '</script>';
