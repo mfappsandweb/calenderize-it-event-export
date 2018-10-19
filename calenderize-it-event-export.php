@@ -1,26 +1,28 @@
 <?php
 /**
- * Plugin Name:    Calenderize it! Event Export
- * Description:    Export Calenderize it! events into HTML file.
- * Version:        0.8.3
+ * Plugin Name:    Calendarize it! Event Export
+ * Description:    Export Calendarize it! events into HTML file.
+ * Version:        0.8.6
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
  * Copyright:      MF Softworks
  */
 
+require_once "vendor/autoload.php";
+
 /**
  * Define plugin version
  */ 
-define('CALENDERIZE_IT_EVENT_EXPORT_VERSION', '0.8.3');
+define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.8.6');
 
 /**
  * Create plugin wp-admin page and plugin directory
  */
-add_action( 'admin_menu', array( 'Calenderize_It_Export_Events', 'create_admin_page' ) );
-register_activation_hook( __FILE__, array( 'Calenderize_It_Export_Events', 'make_download_dir' ) );
+add_action( 'admin_menu', array( 'Calendarize_It_Export_Events', 'create_admin_page' ) );
+register_activation_hook( __FILE__, array( 'Calendarize_It_Export_Events', 'make_download_dir' ) );
 
-class Calenderize_It_Export_Events
+class Calendarize_It_Export_Events
 {
     /**
      * Declare global date options
@@ -57,7 +59,7 @@ class Calenderize_It_Export_Events
      */
     private function make_event_file() 
     {
-        // File path format: WP uploads directory -> calenderize-it-event-export sub-folder -> event export specific file
+        // File path format: WP uploads directory -> calendarize-it-event-export sub-folder -> event export specific file
         $this->filename = "event-" . $this->start_date."-".$this->end_date.".html";
         $event_file_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/" . $this->filename;
         return fopen($event_file_path,"w");
@@ -73,21 +75,21 @@ class Calenderize_It_Export_Events
 
         ?>
         <div class="wrap">
-            <h1>Calenderize it! Event Export</h1>
+            <h1>Calendarize it! Event Export</h1>
             <form method="post">
                 <table class="optiontable form-table">
                     <tr valign="top">
                         <th><label for="start-date">Start Date</label></th>
                         <td>
                             <input name="start-date" type="date" id="start-date" value="<?php $today->modify('+1 day'); echo $today->format('Y-m-d') ?>" class="date">
-                            <span class="description">Enter the first date of events that should be included</span>
+                            <span class="description">Enter the first date of events that should be included.</span>
                         </td>
                     </tr>
                     <tr>
                         <th><label for="end-date">End Date</label></th>
                         <td>
                             <input name="end-date" type="date" id="end-date" value="<?php $today->modify('+1 month'); echo $today->format('Y-m-d') ?>" class="date">
-                            <span class="description">Enter the last date of events that should be included</span>
+                            <span class="description">Enter the last date of events that should be included.</span>
                         </td>
                     </tr>
                 </table>
@@ -98,12 +100,9 @@ class Calenderize_It_Export_Events
             </form>
         </div>
         <?php
-        if( isset ( $_POST ) ) 
+        if( isset ( $_POST ) && isset($_POST['start-date']) && isset($_POST['end-date'])) 
         {
-            if( isset($_POST['start-date']) && isset($_POST['end-date']) ) 
-            {
-                new Calenderize_It_Export_Events($_POST['start-date'], $_POST['end-date']);
-            }
+            new Calendarize_It_Export_Events($_POST['start-date'], $_POST['end-date']);
         }
     }
 
@@ -114,11 +113,11 @@ class Calenderize_It_Export_Events
     {
         // Add page under "Tools"
         add_management_page(
-            'Calenderize it! Event Export',
-            'Calenderize it! Event Export',
+            'Calendarize it! Event Export',
+            'Calendarize it! Event Export',
             'publish_events',
-            'calenderize-it-event-export',
-            array( 'Calenderize_It_Export_Events', 'create_admin_page_html' )
+            'calendarize-it-event-export',
+            array( 'Calendarize_It_Export_Events', 'create_admin_page_html' )
         );
     }
 
@@ -145,6 +144,10 @@ class Calenderize_It_Export_Events
             $events = $this->prepare_events_post($eventlist);
             $this->build_event_html($events);
         }
+        else {
+            echo "<h3>No events found during this time period:<br>" . $this->start_date . " to " . $this->end_date . "</h3>";
+            die;
+        }
     }
 
     /**
@@ -163,55 +166,7 @@ class Calenderize_It_Export_Events
 <html>
     <head>
         <meta charset="utf-8"/>
-        <link rel="stylesheet" id="custom-jquery-ui-css"  href="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/stylesheets/jquery-ui.min.css?ver=1.0.0" type="text/css" media="all" />
-        <link rel="stylesheet" id="custom-jquery-ui-theme-css"  href="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/stylesheets/jquery-ui.theme.min.css?ver=1.0.0" type="text/css" media="all" />
-        <link rel="stylesheet" id="selectize-css-css"  href="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/stylesheets/selectize.default.css?ver=1.0.0" type="text/css" media="all" />
         <link rel="stylesheet" id="main-stylesheet-css"  href="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/stylesheets/theme.css?ver=1.0.17" type="text/css" media="all" />
-        <link rel="stylesheet" id="dashicons-css"  href="https://project1095.simge.edu.sg/wp-includes/css/dashicons.min.css?ver=4.9.7" type="text/css" media="all" />
-        <link rel="stylesheet" id="js_composer_front-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/js_composer/assets/css/js_composer.min.css?ver=5.0.1" type="text/css" media="all" />
-        <link rel="stylesheet" id="js_composer_custom_css-css"  href="https://project1095.simge.edu.sg/wp-content/uploads/js_composer/custom.css?ver=5.0.1" type="text/css" media="all" />
-        <link rel="stylesheet" id="rhc-print-css-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/css/print.css?ver=1.0.0" type="text/css" media="all" />
-        <link rel="stylesheet" id="calendarizeit-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/css/frontend.min.css?ver=4.0.8.4" type="text/css" media="all" />
-        <link rel="stylesheet" id="rhc-last-minue-css"  href="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/css/last_minute_fixes.css?ver=1.0.10" type="text/css" media="all" />
-        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js?ver=2.1.0"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/revslider/public/assets/js/jquery.themepunch.tools.min.js?ver=5.4.1"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/revslider/public/assets/js/jquery.themepunch.revolution.min.js?ver=5.4.1"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/bootstrap.min.js?ver=3.0.0"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/bootstrap-select.js?ver=1.0.2"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/core.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/widget.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/accordion.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/mouse.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/slider.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/resizable.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/draggable.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/button.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/position.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/dialog.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/tabs.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/sortable.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/droppable.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/datepicker.min.js?ver=1.11.4"></script>
-        <script type="text/javascript">
-            jQuery(document).ready(function(jQuery){jQuery.datepicker.setDefaults({"closeText":"Close","currentText":"Today","monthNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"monthNamesShort":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"nextText":"Next","prevText":"Previous","dayNames":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"dayNamesShort":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"dayNamesMin":["S","M","T","W","T","F","S"],"dateFormat":"MM d, yy","firstDay":1,"isRTL":false});});
-        </script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/menu.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/wp-a11y.min.js?ver=4.9.7"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-includes/js/jquery/ui/autocomplete.min.js?ver=1.11.4"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/deprecated.js?ver=bundled-jquery-ui"></script>
-        <script type="text/javascript">
-            /* <![CDATA[ */
-            var RHC = {"ajaxurl":"https:\/\/project1095.simge.edu.sg\/","mobile_width":"480","last_modified":"43ed41870e32fabaaf915fe1c44b7b7f","tooltip_details":[],"visibility_check":"1","gmt_offset":"8","disable_event_link":"0"};
-            /* ]]> */
-        </script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/frontend.min.js?ver=4.3.4.6"></script>
-        <script type="text/javascript" src="https://project1095.simge.edu.sg/wp-content/plugins/calendarize-it/js/rhc_gmap3.js?ver=1.0.1"></script>
-        <style type="text/css">.details_container{width:250px;height:150px;}.item_img{width:200px; height:149px;float:left;}.details_btn{left:170px;top:100px;}.details_title{width:250px;}.details_infos{width:250px;font-size:0.8em;
-        line-height:1.1em;}.jcarousel-skin-default .jcarousel-container-vertical{height:700px !important;}.jcarousel-skin-default .jcarousel-prev-horizontal,.jcarousel-skin-default .jcarousel-next-horizontal,.jcarousel-skin-default .jcarousel-direction-rtl .jcarousel-next-horizontal,.jcarousel-skin-default .jcarousel-next-horizontal:hover,.jcarousel-skin-default .jcarousel-next-horizontal:focus,.jcarousel-skin-default .jcarousel-direction-rtl .jcarousel-prev-horizontal,.jcarousel-skin-default .jcarousel-prev-horizontal:hover,.jcarousel-skin-default .jcarousel-prev-horizontal:focus,.jcarousel-skin-default .jcarousel-direction-rtl .jcarousel-next-vertical,.jcarousel-skin-default .jcarousel-next-vertical:hover,.jcarousel-skin-default .jcarousel-next-vertical:focus,.jcarousel-skin-default .jcarousel-direction-rtl .jcarousel-prev-vertical,.jcarousel-skin-default .jcarousel-prev-vertical:hover,.jcarousel-skin-default .jcarousel-prev-vertical:focus{background-color:#fff;}div[class^=codespacing_map_zoom_in], div[class^=codespacing_light_map_zoom_in]{}div[class^=codespacing_map_zoom_out], div[class^=codespacing_light_map_zoom_out]{}div[class^=faceted_search_container]{background:#ffffff}div[class^=search_form_container_]{background:#ffffff;}div.cspm_arrow_down { display:none; }</style>
-        <style type="text/css" data-type="vc_shortcodes-custom-css">.vc_custom_1475831462166{background-color: #ececec !important;}.vc_custom_1477648010480{background-color: #ebebeb !important;}.vc_custom_1475831462166{background-color: #ececec !important;}.vc_custom_1477855765664{background-color: #ebebeb !important;}.vc_custom_1475831462166{background-color: #ececec !important;}.vc_custom_1477860629451{background-image: url(https://project1095.simge.edu.sg/wp-content/uploads/2016/10/green.png?id=1133) !important;background-position: center !important;background-repeat: no-repeat !important;background-size: cover !important;}</style>
-        <noscript><style type="text/css"> .wpb_animate_when_almost_visible { opacity: 1; }</style></noscript>		
-        <script src="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/common/modernizr.min.js"></script>
-        <script src="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/common/masonry.min.js"></script>
     </head>
     <body>
         <section id="events">
@@ -227,18 +182,18 @@ class Calenderize_It_Export_Events
         $file_html .= '
             </div>
         </section>
+
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js?ver=2.1.0"></script>
+        <script src="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/common/masonry.min.js"></script>
         <script>
-            jQuery(window).on("load", function () {
-                var m = $(".masonry");
-                m.masonry({itemSelector: ".masonryitem"});
-            });
+            var m = $(".masonry");
+            m.masonry({itemSelector: ".masonryitem"});
         </script>
     </body>
-</html> 
-        ';
+</html>';
 
-        // Write HTML to file and display
-        fwrite($event_file,$file_html);
+        // Write HTML to file and display preview
+        fwrite($event_file, stripslashes($file_html));
         echo $file_html;
 
         // If Download was clicked echo JavaScript to download file
@@ -249,7 +204,7 @@ class Calenderize_It_Export_Events
                 $(document).ready(function() {
                     function downloadFile(uri) {
                         // Create <a> tag
-                        var link = "<a id='download-event-file' href='"+uri+"' download='<?php echo $this->filename; ?>' target='_blank' style='display: block;'><?php echo $this->filename; ?></a>";
+                        var link = "<a id='download-event-file' href='"+uri+"' download='<?php echo $this->filename; ?>' target='_blank' style='display: none;'><?php echo $this->filename; ?></a>";
                         // Append <a> tag
                         $("body").append(link);
                     }
@@ -381,6 +336,13 @@ class Calenderize_It_Export_Events
         {
             return strtotime($a['startdate']) - strtotime($b['startdate']);
         });
+
+        $this->console_log(count($result));
+
+        if(count($result) < 1) {
+            echo "<h3>No events found during this time period:<br>" . $this->start_date . " to " . $this->end_date . "</h3>";
+            die;
+        }
     
         return $result;
     }
