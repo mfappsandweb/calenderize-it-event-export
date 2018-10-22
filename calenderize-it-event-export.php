@@ -81,14 +81,14 @@ class Calendarize_It_Export_Events
                     <tr valign="top">
                         <th><label for="start-date">Start Date</label></th>
                         <td>
-                            <input name="start-date" type="date" id="start-date" value="<?php $today->modify('+1 day'); echo $today->format('Y-m-d') ?>" class="date">
+                            <input name="start-date" type="date" id="start-date" value="<?php if(isset($_POST['start-date'])) { echo $_POST['start-date']; } else { $today->modify('+1 day'); echo $today->format('Y-m-d'); } ?>" class="date">
                             <span class="description">Enter the first date of events that should be included.</span>
                         </td>
                     </tr>
                     <tr>
                         <th><label for="end-date">End Date</label></th>
                         <td>
-                            <input name="end-date" type="date" id="end-date" value="<?php $today->modify('+1 month'); echo $today->format('Y-m-d') ?>" class="date">
+                            <input name="end-date" type="date" id="end-date" value="<?php if(isset($_POST['end-date'])) { echo $_POST['end-date']; } else { $today->modify('+1 day'); echo $today->format('Y-m-d'); } ?>" class="date">
                             <span class="description">Enter the last date of events that should be included.</span>
                         </td>
                     </tr>
@@ -221,21 +221,59 @@ class Calendarize_It_Export_Events
      * Write event HTML
      */
     private function display_event($event) 
-    { 
+    {
         // Set event attributes as variables for easy entry
         $permalink = $event['permalink'];
+
         $section_name = $event['section_name'];
+
+        switch($section_name) {
+            case "global-learning":
+                $background_image = $_SERVER['DOCUMENT_ROOT']."/wp-content/plugins/calendarize-it-event-export/img/background/light_blue.png";
+                $bg_color['r'] = 0;
+                $bg_color['g'] = 180;
+                $bg_color['b'] = 213;
+                break;
+            case "student-development":
+                $background_image = $_SERVER['DOCUMENT_ROOT']."/wp-content/plugins/calendarize-it-event-export/img/background/green.jpg";
+                $bg_color['r'] = 86;
+                $bg_color['g'] = 156;
+                $bg_color['b'] = 0;
+                break;
+            case "student-care":
+                $background_image = $_SERVER['DOCUMENT_ROOT']."/wp-content/plugins/calendarize-it-event-export/img/background/blue.jpg";
+                $bg_color['r'] = 33;
+                $bg_color['g'] = 61;
+                $bg_color['b'] = 145;
+                break;
+            case "career-development":
+                $background_image = $_SERVER['DOCUMENT_ROOT']."/wp-content/plugins/calendarize-it-event-export/img/background/purple.png";
+                $bg_color['r'] = 98;
+                $bg_color['g'] = 1;
+                $bg_color['b'] = 107;
+                break;
+        }
+        // Make Windows Compatible
+        if(substr($background_image,0) != "/") {
+            str_replace("/","\\",$background_image);
+        }
+
         if( !empty($event['post_thumbnail']) ) 
         {
             $post_thumbnail = $event['post_thumbnail']; 
         } 
+
         else 
         {
             $post_thumbnail = get_template_directory_uri().'/assets/images/common/placeholder.png';
         }
+
         $month = date('M', strtotime($event['startdate']));
+
         $day = date('d', strtotime($event['startdate']));
+
         $title = $event['title'];
+
         if ($event['starttime'] === null && $event['endtime'] === null) 
         {
             if ($event['startdate']==$event['enddate']) 
@@ -258,7 +296,25 @@ class Calendarize_It_Export_Events
                 $time = '<div>'.date('d M',strtotime($event['startdate'])).', '.date('g:ia',strtotime($event['starttime'])).' to</div><div>'.date('d M',strtotime($event['enddate'])).', '.date('g:ia',strtotime($event['endtime'])).'</div>';
             }
         }
+
         $excerpt = $event['excerpt'];
+
+        // Get background template
+        $template = imagecreatefrompng($background_image);
+        // Set template colour scheme
+        $colour = imagecolorallocate($template, $bg_color['r'], $bg_color['g'], $bg_color['b']);
+        // Add month text
+        imagettftext($template, 18, 0, 35, 20, $colour, "font/Roboto-Regular.ttf", $month);
+
+        // Create image file path
+        $image_file_path = $_SERVER['DOCUMENT_ROOT']."/wp-content/uploads/calendarize-it-event-export/".$this->sanitize_filename($title).".png";
+        // Make Windows Compatible
+        if(substr($image_file_path, 0) != "/") {
+            str_replace("/","\\",$background_image);
+        }
+        // Save image and remove from buffer
+        $res = imagepng($template, $image_file_path, 9, NULL);
+        imagedestroy($template);
         
         // Generate and return event HTML
         $event_html = "
@@ -337,8 +393,6 @@ class Calendarize_It_Export_Events
             return strtotime($a['startdate']) - strtotime($b['startdate']);
         });
 
-        $this->console_log(count($result));
-
         if(count($result) < 1) {
             echo "<h3>No events found during this time period:<br>" . $this->start_date . " to " . $this->end_date . "</h3>";
             die;
@@ -356,5 +410,13 @@ class Calendarize_It_Export_Events
         echo 'console.log('. json_encode( $log ) .')';
         echo '</script>';
     }
+
+    /** Sanitize filenames */
+    private function sanitize_filename($string) {
+        $string = str_replace(' ', '-', $string); // Replaces all spaces with hyphens.
+        $string = preg_replace('/[^A-Za-z0-9\-]/', '', $string); // Removes special chars.
+     
+        return preg_replace('/-+/', '-', $string); // Replaces multiple hyphens with single one.
+     }
 }
 ?>
