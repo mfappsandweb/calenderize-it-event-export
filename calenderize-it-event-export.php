@@ -88,7 +88,7 @@ class Calendarize_It_Export_Events
                     <tr>
                         <th><label for="end-date">End Date</label></th>
                         <td>
-                            <input name="end-date" type="date" id="end-date" value="<?php if(isset($_POST['end-date'])) { echo $_POST['end-date']; } else { $today->modify('+1 day'); echo $today->format('Y-m-d'); } ?>" class="date">
+                            <input name="end-date" type="date" id="end-date" value="<?php if(isset($_POST['end-date'])) { echo $_POST['end-date']; } else { $today->modify('+1 month'); echo $today->format('Y-m-d'); } ?>" class="date">
                             <span class="description">Enter the last date of events that should be included.</span>
                         </td>
                     </tr>
@@ -197,7 +197,7 @@ class Calendarize_It_Export_Events
         echo $file_html;
 
         // If Download was clicked echo JavaScript to download file
-        if( $_POST['export_events'] == 'Download' ) 
+        /*if( $_POST['export_events'] == 'Download' ) 
         {
             ?>
             <script>
@@ -214,7 +214,7 @@ class Calendarize_It_Export_Events
                 })
             </script>
             <?php
-        }
+        }*/
     }
 
     /**
@@ -302,9 +302,10 @@ class Calendarize_It_Export_Events
         // Get background template
         $template = imagecreatefrompng($background_image);
         // Set template colour scheme
-        $colour = imagecolorallocate($template, $bg_color['r'], $bg_color['g'], $bg_color['b']);
+        $colour = imagecolorallocate($template, 255, 255, 255);
         // Add month text
-        imagettftext($template, 18, 0, 35, 20, $colour, "font/Roboto-Regular.ttf", $month);
+        imagettftext($template, 18, 0, 35, 38, $colour, $_SERVER['DOCUMENT_ROOT']."/wp-content/plugins/calendarize-it-event-export/font/Roboto-Regular.ttf", $month);
+        imagettftext($template, 35, 0, 30, 80, $colour, $_SERVER['DOCUMENT_ROOT']."/wp-content/plugins/calendarize-it-event-export/font/Roboto-Regular.ttf", $day);
 
         // Create image file path
         $image_file_path = $_SERVER['DOCUMENT_ROOT']."/wp-content/uploads/calendarize-it-event-export/".$this->sanitize_filename($title).".png";
@@ -314,7 +315,11 @@ class Calendarize_It_Export_Events
         }
         // Save image and remove from buffer
         $res = imagepng($template, $image_file_path, 9, NULL);
+        $this->console_log($image_file_path);
+        $this->console_log($res);
         imagedestroy($template);
+
+
         
         // Generate and return event HTML
         $event_html = "
