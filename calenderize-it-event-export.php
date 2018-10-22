@@ -229,25 +229,25 @@ class Calendarize_It_Export_Events
 
         switch($section_name) {
             case "global-learning":
-                $background_image = $_SERVER['DOCUMENT_ROOT']."/wp-content/plugins/calendarize-it-event-export/img/background/light_blue.png";
+                $background_image = plugin_dir_path(__FILE__) . "img/background/light_blue.png";
                 $bg_color['r'] = 0;
                 $bg_color['g'] = 180;
                 $bg_color['b'] = 213;
                 break;
             case "student-development":
-                $background_image = $_SERVER['DOCUMENT_ROOT']."/wp-content/plugins/calendarize-it-event-export/img/background/green.jpg";
+                $background_image = plugin_dir_path(__FILE__) . "img/background/green.jpg";
                 $bg_color['r'] = 86;
                 $bg_color['g'] = 156;
                 $bg_color['b'] = 0;
                 break;
             case "student-care":
-                $background_image = $_SERVER['DOCUMENT_ROOT']."/wp-content/plugins/calendarize-it-event-export/img/background/blue.jpg";
+                $background_image = plugin_dir_path(__FILE__) . "img/background/blue.jpg";
                 $bg_color['r'] = 33;
                 $bg_color['g'] = 61;
                 $bg_color['b'] = 145;
                 break;
             case "career-development":
-                $background_image = $_SERVER['DOCUMENT_ROOT']."/wp-content/plugins/calendarize-it-event-export/img/background/purple.png";
+                $background_image = plugin_dir_path(__FILE__) . "img/background/purple.png";
                 $bg_color['r'] = 98;
                 $bg_color['g'] = 1;
                 $bg_color['b'] = 107;
@@ -302,13 +302,19 @@ class Calendarize_It_Export_Events
         // Get background template
         $template = imagecreatefrompng($background_image);
         // Set template colour scheme
-        $colour = imagecolorallocate($template, 255, 255, 255);
+        $white = imagecolorallocate($template, 255, 255, 255);
+        $excerpt_color = imagecolorallocate($template, 5, 5, 5);
+        $colour = imagecolorallocate($template, $bg_color['r'], $bg_color['g'], $bg_color['b']);
+
         // Add month text
-        imagettftext($template, 18, 0, 35, 38, $colour, $_SERVER['DOCUMENT_ROOT']."/wp-content/plugins/calendarize-it-event-export/font/Roboto-Regular.ttf", $month);
-        imagettftext($template, 35, 0, 30, 80, $colour, $_SERVER['DOCUMENT_ROOT']."/wp-content/plugins/calendarize-it-event-export/font/Roboto-Regular.ttf", $day);
+        imagettftext($template, 18, 0, 35, 38, $white, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $month);
+        imagettftext($template, 35, 0, 30, 80, $white, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $day);
+        imagettftext($template, 14, 0, 5, 200, $colour, plugin_dir_path(__FILE__) . "font/Roboto-Bold.ttf", $title);
+        imagettftext($template, 12, 0, 5, 220, $excerpt_color, plugin_dir_path(__FILE__) . "font/Roboto-Bold.ttf", $time);
+        imagettftext($template, 12, 0, 5, 250, $excerpt_color, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $excerpt);
 
         // Create image file path
-        $image_file_path = $_SERVER['DOCUMENT_ROOT']."/wp-content/uploads/calendarize-it-event-export/".$this->sanitize_filename($title).".png";
+        $image_file_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/" . $this->sanitize_filename($title) . ".png";
         // Make Windows Compatible
         if(substr($image_file_path, 0) != "/") {
             str_replace("/","\\",$background_image);
