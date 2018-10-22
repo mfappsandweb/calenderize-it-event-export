@@ -30,6 +30,7 @@ class Calendarize_It_Export_Events
     private $start_date;
     private $end_date;
     private $filename;
+    private $image_array = [];
 
     /**
      * Construct the export event class
@@ -272,8 +273,6 @@ class Calendarize_It_Export_Events
 
         $day = date('d', strtotime($event['startdate']));
 
-        $title = $event['title'];
-
         if ($event['starttime'] === null && $event['endtime'] === null) 
         {
             if ($event['startdate']==$event['enddate']) 
@@ -297,21 +296,26 @@ class Calendarize_It_Export_Events
             }
         }
 
-        $excerpt = $event['excerpt'];
+        // Replace HTML encoding in strings
+        $excerpt = str_replace("[&hellip;]", "", $event['excerpt']);
+        $excerpt = html_entity_decode($excerpt);
+
+        $title = html_entity_decode($event['title']);
 
         // Get background template
         $template = imagecreatefrompng($background_image);
         // Set template colour scheme
         $white = imagecolorallocate($template, 255, 255, 255);
-        $excerpt_color = imagecolorallocate($template, 5, 5, 5);
+        $excerpt_color = imagecolorallocate($template, 85, 85, 85);
         $colour = imagecolorallocate($template, $bg_color['r'], $bg_color['g'], $bg_color['b']);
 
-        // Add month text
+        // Add text
         imagettftext($template, 18, 0, 35, 38, $white, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $month);
         imagettftext($template, 35, 0, 30, 80, $white, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $day);
-        imagettftext($template, 14, 0, 5, 200, $colour, plugin_dir_path(__FILE__) . "font/Roboto-Bold.ttf", $title);
-        imagettftext($template, 12, 0, 5, 220, $excerpt_color, plugin_dir_path(__FILE__) . "font/Roboto-Bold.ttf", $time);
-        imagettftext($template, 12, 0, 5, 250, $excerpt_color, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $excerpt);
+        $lineoffset = $this->imagettftext_paragraph($template, 14, 0, 5, 200, $colour, plugin_dir_path(__FILE__) . "font/Roboto-Bold.ttf", $title, 30, 0);
+        $lineoffset = $this->imagettftext_paragraph($template, 11, 0, 5, 200, $excerpt_color, plugin_dir_path(__FILE__) . "font/Roboto-Bold.ttf", $time, 38, $lineoffset);
+        $lineoffset = $this->imagettftext_paragraph($template, 12, 0, 5, 200, $excerpt_color, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $excerpt, 38, $lineoffset+=1, true);
+        // TODO: Write thumbnail to image and add to PDF
 
         // Create image file path
         $image_file_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/" . $this->sanitize_filename($title) . ".png";
@@ -320,12 +324,17 @@ class Calendarize_It_Export_Events
             str_replace("/","\\",$background_image);
         }
         // Save image and remove from buffer
-        $res = imagepng($template, $image_file_path, 9, NULL);
+        imagepng($template, $image_file_path, 9, NULL);
         $this->console_log($image_file_path);
         $this->console_log($res);
         imagedestroy($template);
 
-
+        // Add image and link to array
+        $this->image_array[] = [
+            "image" => $image_file_path,
+            "link" => $permalink
+        ];
+        $this->console_log(print_r($this->image_array, true));
         
         // Generate and return event HTML
         $event_html = "
@@ -394,7 +403,7 @@ class Calendarize_It_Export_Events
                                          'enddate'=>$enddate,
                                          'starttime'=>$starttime,
                                          'endtime'=>$endtime,
-                                         'excerpt'=>preg_replace("~\[[0-9a-zA-Z_\\\/]+\]~","",get_the_excerpt())
+                                         'excerpt'=>preg_replace("~\[[0-9a-zA-Z\_\\\/\ \-]*\]\ *~","",get_the_excerpt())
                 ));
             }
         endwhile;
@@ -412,14 +421,66 @@ class Calendarize_It_Export_Events
         return $result;
     }
 
+    /** 
+     * Automatically format paragraphs to apply to an image
+     */
+    private function imagettftext_paragraph($image, $font_size, $angle, $x, $y, $color, $font, $text, $line_char_limit, $lineoffset = 0, $last_paragraph = false) {
+        // Set line height
+        $lineheight = 20;
+
+        // Break text up into pieces
+        $lines = explode('|', wordwrap($text, $line_char_limit, '|'));
+
+        // Set Y according to current line offset for multi-text multi-line parsing
+        if( $lineoffset > 0) {
+            $y += ($lineoffset * $lineheight);
+        }
+
+        // If line limit (10) is reached, add elipsis and discontinue array
+        if( $last_paragraph == true && (count($lines) + $lineoffset) > 10) {
+            $last_line = 10 - $lineoffset;
+            $lines[$last_line] = substr($lines[$last_line], 0, -3) . "...";
+
+            for($i = count($lines); $i > $last_line; $i--) {
+                unset($lines[$i]);
+                $lines = array_values($lines);
+            }
+        }
+        // If line limit isn't hit, add elipsis to last possible line
+        else if( $last_paragraph == true && $text[-1] != "]") {
+            $last_line = count($lines);
+            if($lines[$last_line] != " " && $lines[$last_line] != "") {
+                $lines[$last_line] = trim($lines[$last_line]) . "...";
+            }
+            else {
+                $last_line--;
+                $lines[$last_line] = trim($lines[$last_line]) . "...";
+            }
+        }
+
+        // Loop through the lines and place them on the image
+        foreach ($lines as $line)
+        {
+            // Add text to image
+            imagettftext($image, $font_size, $angle, $x, $y, $color, $font, $line);
+    
+            // Increment Y by line height so the next line is below the previous line
+            $lineoffset++;
+            $y += $lineheight;
+        }
+        return $lineoffset;
+    }
+
     /**
      * HTML Console log for testing
      */
     private function console_log($log) 
     {
-        echo '<script>';
-        echo 'console.log('. json_encode( $log ) .')';
-        echo '</script>';
+        $html = '
+        <script>
+            console.log('. json_encode( $log ) .')
+        </script>';
+        echo $html;
     }
 
     /** Sanitize filenames */
@@ -428,6 +489,6 @@ class Calendarize_It_Export_Events
         $string = preg_replace('/[^A-Za-z0-9\-]/', '', $string); // Removes special chars.
      
         return preg_replace('/-+/', '-', $string); // Replaces multiple hyphens with single one.
-     }
+    }
 }
 ?>
