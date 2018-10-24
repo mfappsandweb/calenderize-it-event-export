@@ -2,7 +2,7 @@
 /**
  * Plugin Name:    Calendarize it! Event Export
  * Description:    Export Calendarize it! events into HTML file.
- * Version:        0.8.6
+ * Version:        0.9.1
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -14,7 +14,7 @@ require_once "vendor/autoload.php";
 /**
  * Define plugin version
  */ 
-define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.8.6');
+define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.9.1');
 
 /**
  * Create plugin wp-admin page and plugin directory
@@ -52,6 +52,8 @@ class Calendarize_It_Export_Events
     public function make_download_dir() 
     {
         $dir = wp_upload_dir()['basedir'] . '/calendarize-it-event-export';
+        wp_mkdir_p($dir);
+        $dir = wp_upload_dir()['basedir'] . '/calendarize-it-event-export/thumbnails';
         wp_mkdir_p($dir);
     }
     
@@ -304,29 +306,40 @@ class Calendarize_It_Export_Events
 
         // Get background template
         $template = imagecreatefrompng($background_image);
+        imagealphablending($template, true);
+        imagesavealpha($template, true);
+
         // Set template colour scheme
         $white = imagecolorallocate($template, 255, 255, 255);
         $excerpt_color = imagecolorallocate($template, 85, 85, 85);
         $colour = imagecolorallocate($template, $bg_color['r'], $bg_color['g'], $bg_color['b']);
 
+        // Add event image
+        $post_thumbnail_local = wp_upload_dir()['basedir'] . explode("uploads",$post_thumbnail)[1];
+        $post_thumbnail_image = $this->resize_image($post_thumbnail_local, 420);
+
+        imagecopy($template, $post_thumbnail_image,0,4,0,0,400,177);
+        imagedestroy($post_thumbnail_image);
+
+        // TODO: Add Ribbon to image and add to PDF
+        // Add Ribbon
         // Add text
         imagettftext($template, 18, 0, 35, 38, $white, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $month);
         imagettftext($template, 35, 0, 30, 80, $white, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $day);
         $lineoffset = $this->imagettftext_paragraph($template, 14, 0, 5, 200, $colour, plugin_dir_path(__FILE__) . "font/Roboto-Bold.ttf", $title, 30, 0);
         $lineoffset = $this->imagettftext_paragraph($template, 11, 0, 5, 200, $excerpt_color, plugin_dir_path(__FILE__) . "font/Roboto-Bold.ttf", $time, 38, $lineoffset);
         $lineoffset = $this->imagettftext_paragraph($template, 12, 0, 5, 200, $excerpt_color, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $excerpt, 38, $lineoffset+=1, true);
-        // TODO: Write thumbnail to image and add to PDF
-
+        
         // Create image file path
         $image_file_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/" . $this->sanitize_filename($title) . ".png";
+        
         // Make Windows Compatible
         if(substr($image_file_path, 0) != "/") {
             str_replace("/","\\",$background_image);
         }
+
         // Save image and remove from buffer
         imagepng($template, $image_file_path, 9, NULL);
-        $this->console_log($image_file_path);
-        $this->console_log($res);
         imagedestroy($template);
 
         // Add image and link to array
@@ -334,7 +347,6 @@ class Calendarize_It_Export_Events
             "image" => $image_file_path,
             "link" => $permalink
         ];
-        $this->console_log(print_r($this->image_array, true));
         
         // Generate and return event HTML
         $event_html = "
@@ -469,6 +481,51 @@ class Calendarize_It_Export_Events
             $y += $lineheight;
         }
         return $lineoffset;
+    }
+
+    /**
+     * Resize thumbnail images
+     */
+    private function resize_image($path,$max_width)
+    {
+        $mime = getimagesize($path);
+        if($mime['mime']=='image/png') { 
+            $src_img = imagecreatefrompng($path);
+        }
+        if($mime['mime']=='image/jpg' || $mime['mime']=='image/jpeg' || $mime['mime']=='image/pjpeg') {
+            $src_img = imagecreatefromjpeg($path);
+        }
+    
+        $old_x          =   imageSX($src_img);
+        $old_y          =   imageSY($src_img);
+
+        $this->console_log("Image " . pathinfo($path, PATHINFO_FILENAME) . "\nWidth: $old_x\nHeight: $old_y");
+    
+        $new_width = $max_width;
+        $new_height = round( ($old_y / $old_x) * $new_width );
+
+        $this->console_log("New size:\nWidth: $new_width\nHeight: $new_height");
+    
+        $dst_img        =   ImageCreateTrueColor($new_width,$new_height);
+    
+        imagecopyresampled($dst_img,$src_img,0,0,0,0,$new_width,$new_height,$old_x,$old_y);
+
+        if($mime['mime']=='image/png') { 
+            $new_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/thumbnails/" . pathinfo($path, PATHINFO_FILENAME) . ".png";
+            imagepng($dst_img, $new_path, 9);
+            $new_image = imagecreatefrompng($new_path);
+        }
+        if($mime['mime']=='image/jpg' || $mime['mime']=='image/jpeg' || $mime['mime']=='image/pjpeg') {
+            $new_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/thumbnails/" . pathinfo($path, PATHINFO_FILENAME) . ".jpg";
+            imagejpeg($dst_img, $new_path, 90);
+            $new_image = imagecreatefromjpeg($new_path);
+        }
+
+        // Clean up
+        imagedestroy($src_img);
+        imagedestroy($dst_img);
+
+        return $new_image;
     }
 
     /**
