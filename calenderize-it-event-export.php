@@ -2,7 +2,7 @@
 /**
  * Plugin Name:    Calendarize it! Event Export
  * Description:    Export Calendarize it! events into HTML file.
- * Version:        0.10.1
+ * Version:        0.10.2
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -14,7 +14,7 @@ require_once "vendor/autoload.php";
 /**
  * Define plugin version
  */ 
-define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.10.1');
+define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.10.2');
 
 /**
  * Create plugin wp-admin page and plugin directory
@@ -161,9 +161,6 @@ class Calendarize_It_Export_Events
         // Get event file handle
         $event_file = $this->make_event_file();
 
-        // Get file download link
-        $file_url = get_site_url()."/wp-content/uploads/calendarize-it-event-export/".$this->filename;
-
         // Save HTML header scripts to variable
         $file_html = '
 <html>
@@ -209,17 +206,20 @@ class Calendarize_It_Export_Events
         echo $file_html;
 
 
-        // TODO: Create PDF of images generated in $this->image_array
+        // Create PDF of images generated in $this->image_array
         $pdf_html = "
         <table>";
         for($i = 0; $i < count($this->image_array); $i += 4) {
             $index = $i;
             $pdf_html .= "<tr>";
             for($x = $i; $x < ($index + 4); $x++) {
+                if(!isset($this->image_array[$x])) {
+                    break;
+                }
                 $pdf_html .= "
                 <td>
-                    <a href='" . $this->image_array[$x]['link'] . "'>
-                        <img src='" . $this->image_array[$x]['image_path'] . "'>
+                    <a href=\"" . $this->image_array[$x]['link'] . "\" style=\"color: #fff;\">
+                        <img src=\"" . $this->image_array[$x]['image_path'] . "\" style=\"border: 1px solid #D3D3D3;\">
                     </a>
                 </td>
                 ";
@@ -229,8 +229,38 @@ class Calendarize_It_Export_Events
         $pdf_html .= "</table>";
         $this->console_log("PDF HTML:\n$pdf_html");
 
+        // Create PDF file path
+        $pdf_file_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/events-" . $this->start_date . "-" . $this->end_date . ".pdf"; 
+        $this->console_log("PDF Link: $pdf_file_path");
+
+        // Make PDF file
+        $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->SetCreator('Calendarize it! Event Export');
+        $pdf->SetAuthor('MF Softworks');
+        $pdf->SetTitle('Events ' . $this->start_date . ' to ' . $this->end_date);
+        $pdf->SetSubject('Events ' . $this->start_date . ' to ' . $this->end_date);
+        $pdf->SetKeywords('Events, Project1095');
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+        $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+        $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+        $pdf->setImageScale(1.66);
+        $pdf->SetFont('helvetica','',11);
+        $pdf->AddPage();
+
+        // Write PDF HTML
+        $pdf->writeHTML($pdf_html, true, false, true, false, '');
+
+        // Save PDF file
+        $pdf->Output($pdf_file_path, 'F');
+        
+        // Get file download link
+        $file_url = get_site_url()."/wp-content/uploads/calendarize-it-event-export/events-" . $this->start_date . "-" . $this->end_date . ".pdf";
+        
+
         // If Download was clicked echo JavaScript to download file
-        /*if( $_POST['export_events'] == 'Download' ) 
+        if( $_POST['export_events'] == 'Download' ) 
         {
             ?>
             <script>
@@ -247,7 +277,7 @@ class Calendarize_It_Export_Events
                 })
             </script>
             <?php
-        }*/
+        }
     }
 
     /**
@@ -414,7 +444,7 @@ class Calendarize_It_Export_Events
         }
         
         // Get Image URL path
-        $image_path = get_option('siteurl') . "/wp-content/uploads/calendarize-it-event-export/" . $this->sanitize_filename($title) . ".png";
+        $image_path = "/wp-content/uploads/calendarize-it-event-export/" . $this->sanitize_filename($title) . ".png";
 
         // Add image and link to array
         $this->image_array[] = [
@@ -475,7 +505,7 @@ class Calendarize_It_Export_Events
                                          'enddate'=>$enddate,
                                          'starttime'=>$starttime,
                                          'endtime'=>$endtime,
-                                         'excerpt'=>preg_replace("~\[[0-9a-zA-Z\_\\\/\ \-]*\]\ *~","",get_the_excerpt())
+                                         'excerpt'=>preg_replace("~\[[0-9a-zA-Z\_\\\/\ \-\=\"]*\]\ *~","",get_the_excerpt())
                 ));
             }
         endwhile;
