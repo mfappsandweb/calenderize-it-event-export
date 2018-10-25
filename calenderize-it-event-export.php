@@ -2,7 +2,7 @@
 /**
  * Plugin Name:    Calendarize it! Event Export
  * Description:    Export Calendarize it! events into HTML file.
- * Version:        0.9.1
+ * Version:        0.9.2
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -14,7 +14,7 @@ require_once "vendor/autoload.php";
 /**
  * Define plugin version
  */ 
-define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.9.1');
+define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.9.2');
 
 /**
  * Create plugin wp-admin page and plugin directory
@@ -169,33 +169,43 @@ class Calendarize_It_Export_Events
 <html>
     <head>
         <meta charset="utf-8"/>
-        <link rel="stylesheet" id="main-stylesheet-css"  href="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/stylesheets/theme.css?ver=1.0.17" type="text/css" media="all" />
+        <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        .column {
+            float: left;
+            width: 25%;
+            padding: 5px;
+        }
+        
+        .row::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+        </style>
     </head>
     <body>
-        <section id="events">
-            <div class="masonry">';
+    <div class="row">';
 
                 // Format each event and add to HTML variable
                 foreach($events as $event) 
                 {
-                    $file_html .= $this->display_event($event);
+                    if(trim( explode("/events/",$event['permalink'] )[1] ) != "") {
+                        $file_html .= $this->display_event($event);
+                    }
                 }
 
         // Add HTML footer scripts to file
         $file_html .= '
-            </div>
-        </section>
-
-        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js?ver=2.1.0"></script>
-        <script src="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/common/masonry.min.js"></script>
-        <script>
-            var m = $(".masonry");
-            m.masonry({itemSelector: ".masonryitem"});
-        </script>
+        </div>
     </body>
 </html>';
 
         // Write HTML to file and display preview
+        $this->console_log($file_html);
         fwrite($event_file, stripslashes($file_html));
         echo $file_html;
 
@@ -233,24 +243,28 @@ class Calendarize_It_Export_Events
         switch($section_name) {
             case "global-learning":
                 $background_image = plugin_dir_path(__FILE__) . "img/background/light_blue.png";
+                $ribbon_image = plugin_dir_path(__FILE__) . "img/ribbon/calendar_light_blue.png";
                 $bg_color['r'] = 0;
                 $bg_color['g'] = 180;
                 $bg_color['b'] = 213;
                 break;
             case "student-development":
-                $background_image = plugin_dir_path(__FILE__) . "img/background/green.jpg";
+                $background_image = plugin_dir_path(__FILE__) . "img/background/green.png";
+                $ribbon_image = plugin_dir_path(__FILE__) . "img/ribbon/calendar_green.png";
                 $bg_color['r'] = 86;
                 $bg_color['g'] = 156;
                 $bg_color['b'] = 0;
                 break;
             case "student-care":
-                $background_image = plugin_dir_path(__FILE__) . "img/background/blue.jpg";
+                $background_image = plugin_dir_path(__FILE__) . "img/background/blue.png";
+                $ribbon_image = plugin_dir_path(__FILE__) . "img/ribbon/calendar_blue.png";
                 $bg_color['r'] = 33;
                 $bg_color['g'] = 61;
                 $bg_color['b'] = 145;
                 break;
             case "career-development":
                 $background_image = plugin_dir_path(__FILE__) . "img/background/purple.png";
+                $ribbon_image = plugin_dir_path(__FILE__) . "img/ribbon/calendar_purple.png";
                 $bg_color['r'] = 98;
                 $bg_color['g'] = 1;
                 $bg_color['b'] = 107;
@@ -261,7 +275,7 @@ class Calendarize_It_Export_Events
             str_replace("/","\\",$background_image);
         }
 
-        if( !empty($event['post_thumbnail']) ) 
+        if( !empty($event['post_thumbnail']) && trim($event['post_thumbnail']) != "" && trim($event['post_thumbnail']) != " " ) 
         {
             $post_thumbnail = $event['post_thumbnail']; 
         } 
@@ -270,6 +284,7 @@ class Calendarize_It_Export_Events
         {
             $post_thumbnail = get_template_directory_uri().'/assets/images/common/placeholder.png';
         }
+        $this->console_log("Thumbnail directory: $post_thumbnail");
 
         $month = date('M', strtotime($event['startdate']));
 
@@ -301,35 +316,11 @@ class Calendarize_It_Export_Events
         // Replace HTML encoding in strings
         $excerpt = str_replace("[&hellip;]", "", $event['excerpt']);
         $excerpt = html_entity_decode($excerpt);
+        $excerpt = strip_tags($excerpt);
 
         $title = html_entity_decode($event['title']);
+        $title = strip_tags($title);
 
-        // Get background template
-        $template = imagecreatefrompng($background_image);
-        imagealphablending($template, true);
-        imagesavealpha($template, true);
-
-        // Set template colour scheme
-        $white = imagecolorallocate($template, 255, 255, 255);
-        $excerpt_color = imagecolorallocate($template, 85, 85, 85);
-        $colour = imagecolorallocate($template, $bg_color['r'], $bg_color['g'], $bg_color['b']);
-
-        // Add event image
-        $post_thumbnail_local = wp_upload_dir()['basedir'] . explode("uploads",$post_thumbnail)[1];
-        $post_thumbnail_image = $this->resize_image($post_thumbnail_local, 420);
-
-        imagecopy($template, $post_thumbnail_image,0,4,0,0,400,177);
-        imagedestroy($post_thumbnail_image);
-
-        // TODO: Add Ribbon to image and add to PDF
-        // Add Ribbon
-        // Add text
-        imagettftext($template, 18, 0, 35, 38, $white, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $month);
-        imagettftext($template, 35, 0, 30, 80, $white, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $day);
-        $lineoffset = $this->imagettftext_paragraph($template, 14, 0, 5, 200, $colour, plugin_dir_path(__FILE__) . "font/Roboto-Bold.ttf", $title, 30, 0);
-        $lineoffset = $this->imagettftext_paragraph($template, 11, 0, 5, 200, $excerpt_color, plugin_dir_path(__FILE__) . "font/Roboto-Bold.ttf", $time, 38, $lineoffset);
-        $lineoffset = $this->imagettftext_paragraph($template, 12, 0, 5, 200, $excerpt_color, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $excerpt, 38, $lineoffset+=1, true);
-        
         // Create image file path
         $image_file_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/" . $this->sanitize_filename($title) . ".png";
         
@@ -338,18 +329,80 @@ class Calendarize_It_Export_Events
             str_replace("/","\\",$background_image);
         }
 
-        // Save image and remove from buffer
-        imagepng($template, $image_file_path, 9, NULL);
-        imagedestroy($template);
+        if(file_exists($image_file_path) == false) {
+            // Create image
+            $image_main = ImageCreateTrueColor(303, 420);
+            imagealphablending($image_main, false);
+            imagesavealpha($image_main, true);
+
+            // Set image template
+            $template = imagecreatefrompng($background_image);
+            imagecopy($image_main, $template,0,0,0,0,303,420);
+            imagedestroy($template);
+
+            // Save image and remove from buffer
+            imagepng($image_main, $image_file_path, 9, NULL);
+            imagedestroy($image_main);
+
+            // Add event image
+            $image_main = imagecreatefrompng($image_file_path);
+            imagealphablending($image_main, false);
+            imagesavealpha($image_main, true);
+            if(strpos($post_thumbnail,"placeholder") === false) {
+                $post_thumbnail_local = wp_upload_dir()['basedir'] . explode("uploads",$post_thumbnail)[1];
+            }
+            else {
+                $post_thumbnail_local = get_template_directory() . '/assets/images/common/placeholder.png';
+            }
+            $post_thumbnail_image = $this->resize_image($post_thumbnail_local, 303, true);
+            imagecopy($image_main, $post_thumbnail_image,0,4,0,0,303,177);
+            imagedestroy($post_thumbnail_image);
+
+            // Save image and remove from buffer
+            imagepng($image_main, $image_file_path, 9, NULL);
+            imagedestroy($image_main);
+
+            // Add ribbon image
+            $image_main = imagecreatefrompng($image_file_path);
+            imagealphablending($image_main, true);
+            imagesavealpha($image_main, true);
+            $ribbon = $this->resize_image($ribbon_image, 76);
+            imagecopy($image_main, $ribbon,20,4,0,0,76,96);
+            imagedestroy($ribbon);
+
+            // Save image and remove from buffer
+            imagepng($image_main, $image_file_path, 9, NULL);
+            imagedestroy($image_main);
+
+            // Open for writing text
+            $image_main = imagecreatefrompng($image_file_path);
+            // Set template colour scheme
+            $white = imagecolorallocate($image_main, 255, 255, 255);
+            $excerpt_color = imagecolorallocate($image_main, 85, 85, 85);
+            $colour = imagecolorallocate($image_main, $bg_color['r'], $bg_color['g'], $bg_color['b']);
+            // Add text
+            imagettftext($image_main, 18, 0, 35, 38, $white, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $month);
+            imagettftext($image_main, 35, 0, 30, 80, $white, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $day);
+            $lineoffset = $this->imagettftext_paragraph($image_main, 14, 0, 5, 200, $colour, plugin_dir_path(__FILE__) . "font/Roboto-Bold.ttf", $title, 30, 0);
+            $lineoffset = $this->imagettftext_paragraph($image_main, 11, 0, 5, 200, $excerpt_color, plugin_dir_path(__FILE__) . "font/Roboto-Bold.ttf", $time, 38, $lineoffset);
+            $lineoffset = $this->imagettftext_paragraph($image_main, 12, 0, 5, 200, $excerpt_color, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $excerpt, 38, $lineoffset+=1, true);
+            
+            // Save image and remove from buffer
+            imagepng($image_main, $image_file_path, 9, NULL);
+            imagedestroy($image_main);
+        }
+        
+        // Get Image URL path
+        $image_path = get_option('siteurl') . "/wp-content/uploads/calendarize-it-event-export/" . $this->sanitize_filename($title) . ".png";
 
         // Add image and link to array
         $this->image_array[] = [
-            "image" => $image_file_path,
+            "image" => $image_path,
             "link" => $permalink
         ];
         
         // Generate and return event HTML
-        $event_html = "
+        /*$event_html = "
         <a href=\"$permalink\"  class=\"masonryitem\">
             <div class=\"item $section_name\">
                 <div class=\"image-wrapper\">
@@ -370,6 +423,15 @@ class Calendarize_It_Export_Events
                 </div>
             </div>
         </a>
+        ";*/
+
+        // New HTML Format
+        $event_html = "
+            <a href='$permalink' target='_blank'>
+                <div class='column'>
+                    <img src='$image_path' style='width:100%'>
+                </div>
+            </a>
         ";
 
         return $event_html;
@@ -486,7 +548,7 @@ class Calendarize_It_Export_Events
     /**
      * Resize thumbnail images
      */
-    private function resize_image($path,$max_width)
+    private function resize_image($path,$max_width,$thumbnail = false)
     {
         $mime = getimagesize($path);
         if($mime['mime']=='image/png') { 
@@ -498,15 +560,18 @@ class Calendarize_It_Export_Events
     
         $old_x          =   imageSX($src_img);
         $old_y          =   imageSY($src_img);
-
-        $this->console_log("Image " . pathinfo($path, PATHINFO_FILENAME) . "\nWidth: $old_x\nHeight: $old_y");
     
         $new_width = $max_width;
         $new_height = round( ($old_y / $old_x) * $new_width );
 
-        $this->console_log("New size:\nWidth: $new_width\nHeight: $new_height");
+        if($new_height < 177 && $thumbnail) {
+            $new_height = 177;
+            $new_width = round( ($old_x / $old_y) * $new_height );
+        }
     
         $dst_img        =   ImageCreateTrueColor($new_width,$new_height);
+        imagealphablending($dst_img, false);
+        imagesavealpha($dst_img, true);
     
         imagecopyresampled($dst_img,$src_img,0,0,0,0,$new_width,$new_height,$old_x,$old_y);
 
