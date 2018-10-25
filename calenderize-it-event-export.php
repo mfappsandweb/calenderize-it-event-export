@@ -2,7 +2,7 @@
 /**
  * Plugin Name:    Calendarize it! Event Export
  * Description:    Export Calendarize it! events into HTML file.
- * Version:        0.8.6
+ * Version:        0.9.2
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -14,7 +14,7 @@ require_once "vendor/autoload.php";
 /**
  * Define plugin version
  */ 
-define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.8.6');
+define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.9.2');
 
 /**
  * Create plugin wp-admin page and plugin directory
@@ -30,6 +30,7 @@ class Calendarize_It_Export_Events
     private $start_date;
     private $end_date;
     private $filename;
+    private $image_array = [];
 
     /**
      * Construct the export event class
@@ -51,6 +52,8 @@ class Calendarize_It_Export_Events
     public function make_download_dir() 
     {
         $dir = wp_upload_dir()['basedir'] . '/calendarize-it-event-export';
+        wp_mkdir_p($dir);
+        $dir = wp_upload_dir()['basedir'] . '/calendarize-it-event-export/thumbnails';
         wp_mkdir_p($dir);
     }
     
@@ -81,14 +84,14 @@ class Calendarize_It_Export_Events
                     <tr valign="top">
                         <th><label for="start-date">Start Date</label></th>
                         <td>
-                            <input name="start-date" type="date" id="start-date" value="<?php $today->modify('+1 day'); echo $today->format('Y-m-d') ?>" class="date">
+                            <input name="start-date" type="date" id="start-date" value="<?php if(isset($_POST['start-date'])) { echo $_POST['start-date']; } else { $today->modify('+1 day'); echo $today->format('Y-m-d'); } ?>" class="date">
                             <span class="description">Enter the first date of events that should be included.</span>
                         </td>
                     </tr>
                     <tr>
                         <th><label for="end-date">End Date</label></th>
                         <td>
-                            <input name="end-date" type="date" id="end-date" value="<?php $today->modify('+1 month'); echo $today->format('Y-m-d') ?>" class="date">
+                            <input name="end-date" type="date" id="end-date" value="<?php if(isset($_POST['end-date'])) { echo $_POST['end-date']; } else { $today->modify('+1 month'); echo $today->format('Y-m-d'); } ?>" class="date">
                             <span class="description">Enter the last date of events that should be included.</span>
                         </td>
                     </tr>
@@ -166,38 +169,48 @@ class Calendarize_It_Export_Events
 <html>
     <head>
         <meta charset="utf-8"/>
-        <link rel="stylesheet" id="main-stylesheet-css"  href="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/stylesheets/theme.css?ver=1.0.17" type="text/css" media="all" />
+        <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        .column {
+            float: left;
+            width: 25%;
+            padding: 5px;
+        }
+        
+        .row::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+        </style>
     </head>
     <body>
-        <section id="events">
-            <div class="masonry">';
+    <div class="row">';
 
                 // Format each event and add to HTML variable
                 foreach($events as $event) 
                 {
-                    $file_html .= $this->display_event($event);
+                    if(trim( explode("/events/",$event['permalink'] )[1] ) != "") {
+                        $file_html .= $this->display_event($event);
+                    }
                 }
 
         // Add HTML footer scripts to file
         $file_html .= '
-            </div>
-        </section>
-
-        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js?ver=2.1.0"></script>
-        <script src="https://project1095.simge.edu.sg/wp-content/themes/project1095/assets/javascript/common/masonry.min.js"></script>
-        <script>
-            var m = $(".masonry");
-            m.masonry({itemSelector: ".masonryitem"});
-        </script>
+        </div>
     </body>
 </html>';
 
         // Write HTML to file and display preview
+        $this->console_log($file_html);
         fwrite($event_file, stripslashes($file_html));
         echo $file_html;
 
         // If Download was clicked echo JavaScript to download file
-        if( $_POST['export_events'] == 'Download' ) 
+        /*if( $_POST['export_events'] == 'Download' ) 
         {
             ?>
             <script>
@@ -214,28 +227,69 @@ class Calendarize_It_Export_Events
                 })
             </script>
             <?php
-        }
+        }*/
     }
 
     /**
      * Write event HTML
      */
     private function display_event($event) 
-    { 
+    {
         // Set event attributes as variables for easy entry
         $permalink = $event['permalink'];
+
         $section_name = $event['section_name'];
-        if( !empty($event['post_thumbnail']) ) 
+
+        switch($section_name) {
+            case "global-learning":
+                $background_image = plugin_dir_path(__FILE__) . "img/background/light_blue.png";
+                $ribbon_image = plugin_dir_path(__FILE__) . "img/ribbon/calendar_light_blue.png";
+                $bg_color['r'] = 0;
+                $bg_color['g'] = 180;
+                $bg_color['b'] = 213;
+                break;
+            case "student-development":
+                $background_image = plugin_dir_path(__FILE__) . "img/background/green.png";
+                $ribbon_image = plugin_dir_path(__FILE__) . "img/ribbon/calendar_green.png";
+                $bg_color['r'] = 86;
+                $bg_color['g'] = 156;
+                $bg_color['b'] = 0;
+                break;
+            case "student-care":
+                $background_image = plugin_dir_path(__FILE__) . "img/background/blue.png";
+                $ribbon_image = plugin_dir_path(__FILE__) . "img/ribbon/calendar_blue.png";
+                $bg_color['r'] = 33;
+                $bg_color['g'] = 61;
+                $bg_color['b'] = 145;
+                break;
+            case "career-development":
+                $background_image = plugin_dir_path(__FILE__) . "img/background/purple.png";
+                $ribbon_image = plugin_dir_path(__FILE__) . "img/ribbon/calendar_purple.png";
+                $bg_color['r'] = 98;
+                $bg_color['g'] = 1;
+                $bg_color['b'] = 107;
+                break;
+        }
+        // Make Windows Compatible
+        if(substr($background_image,0) != "/") {
+            str_replace("/","\\",$background_image);
+        }
+
+        if( !empty($event['post_thumbnail']) && trim($event['post_thumbnail']) != "" && trim($event['post_thumbnail']) != " " ) 
         {
             $post_thumbnail = $event['post_thumbnail']; 
         } 
+
         else 
         {
             $post_thumbnail = get_template_directory_uri().'/assets/images/common/placeholder.png';
         }
+        $this->console_log("Thumbnail directory: $post_thumbnail");
+
         $month = date('M', strtotime($event['startdate']));
+
         $day = date('d', strtotime($event['startdate']));
-        $title = $event['title'];
+
         if ($event['starttime'] === null && $event['endtime'] === null) 
         {
             if ($event['startdate']==$event['enddate']) 
@@ -258,10 +312,97 @@ class Calendarize_It_Export_Events
                 $time = '<div>'.date('d M',strtotime($event['startdate'])).', '.date('g:ia',strtotime($event['starttime'])).' to</div><div>'.date('d M',strtotime($event['enddate'])).', '.date('g:ia',strtotime($event['endtime'])).'</div>';
             }
         }
-        $excerpt = $event['excerpt'];
+
+        // Replace HTML encoding in strings
+        $excerpt = str_replace("[&hellip;]", "", $event['excerpt']);
+        $excerpt = html_entity_decode($excerpt);
+        $excerpt = strip_tags($excerpt);
+
+        $title = html_entity_decode($event['title']);
+        $title = strip_tags($title);
+
+        // Create image file path
+        $image_file_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/" . $this->sanitize_filename($title) . ".png";
+        
+        // Make Windows Compatible
+        if(substr($image_file_path, 0) != "/") {
+            str_replace("/","\\",$background_image);
+        }
+
+        if(file_exists($image_file_path) == false) {
+            // Create image
+            $image_main = ImageCreateTrueColor(303, 420);
+            imagealphablending($image_main, false);
+            imagesavealpha($image_main, true);
+
+            // Set image template
+            $template = imagecreatefrompng($background_image);
+            imagecopy($image_main, $template,0,0,0,0,303,420);
+            imagedestroy($template);
+
+            // Save image and remove from buffer
+            imagepng($image_main, $image_file_path, 9, NULL);
+            imagedestroy($image_main);
+
+            // Add event image
+            $image_main = imagecreatefrompng($image_file_path);
+            imagealphablending($image_main, false);
+            imagesavealpha($image_main, true);
+            if(strpos($post_thumbnail,"placeholder") === false) {
+                $post_thumbnail_local = wp_upload_dir()['basedir'] . explode("uploads",$post_thumbnail)[1];
+            }
+            else {
+                $post_thumbnail_local = get_template_directory() . '/assets/images/common/placeholder.png';
+            }
+            $post_thumbnail_image = $this->resize_image($post_thumbnail_local, 303, true);
+            imagecopy($image_main, $post_thumbnail_image,0,4,0,0,303,177);
+            imagedestroy($post_thumbnail_image);
+
+            // Save image and remove from buffer
+            imagepng($image_main, $image_file_path, 9, NULL);
+            imagedestroy($image_main);
+
+            // Add ribbon image
+            $image_main = imagecreatefrompng($image_file_path);
+            imagealphablending($image_main, true);
+            imagesavealpha($image_main, true);
+            $ribbon = $this->resize_image($ribbon_image, 76);
+            imagecopy($image_main, $ribbon,20,4,0,0,76,96);
+            imagedestroy($ribbon);
+
+            // Save image and remove from buffer
+            imagepng($image_main, $image_file_path, 9, NULL);
+            imagedestroy($image_main);
+
+            // Open for writing text
+            $image_main = imagecreatefrompng($image_file_path);
+            // Set template colour scheme
+            $white = imagecolorallocate($image_main, 255, 255, 255);
+            $excerpt_color = imagecolorallocate($image_main, 85, 85, 85);
+            $colour = imagecolorallocate($image_main, $bg_color['r'], $bg_color['g'], $bg_color['b']);
+            // Add text
+            imagettftext($image_main, 18, 0, 35, 38, $white, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $month);
+            imagettftext($image_main, 35, 0, 30, 80, $white, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $day);
+            $lineoffset = $this->imagettftext_paragraph($image_main, 14, 0, 5, 200, $colour, plugin_dir_path(__FILE__) . "font/Roboto-Bold.ttf", $title, 30, 0);
+            $lineoffset = $this->imagettftext_paragraph($image_main, 11, 0, 5, 200, $excerpt_color, plugin_dir_path(__FILE__) . "font/Roboto-Bold.ttf", $time, 38, $lineoffset);
+            $lineoffset = $this->imagettftext_paragraph($image_main, 12, 0, 5, 200, $excerpt_color, plugin_dir_path(__FILE__) . "font/Roboto-Regular.ttf", $excerpt, 38, $lineoffset+=1, true);
+            
+            // Save image and remove from buffer
+            imagepng($image_main, $image_file_path, 9, NULL);
+            imagedestroy($image_main);
+        }
+        
+        // Get Image URL path
+        $image_path = get_option('siteurl') . "/wp-content/uploads/calendarize-it-event-export/" . $this->sanitize_filename($title) . ".png";
+
+        // Add image and link to array
+        $this->image_array[] = [
+            "image" => $image_path,
+            "link" => $permalink
+        ];
         
         // Generate and return event HTML
-        $event_html = "
+        /*$event_html = "
         <a href=\"$permalink\"  class=\"masonryitem\">
             <div class=\"item $section_name\">
                 <div class=\"image-wrapper\">
@@ -282,6 +423,15 @@ class Calendarize_It_Export_Events
                 </div>
             </div>
         </a>
+        ";*/
+
+        // New HTML Format
+        $event_html = "
+            <a href='$permalink' target='_blank'>
+                <div class='column'>
+                    <img src='$image_path' style='width:100%'>
+                </div>
+            </a>
         ";
 
         return $event_html;
@@ -327,7 +477,7 @@ class Calendarize_It_Export_Events
                                          'enddate'=>$enddate,
                                          'starttime'=>$starttime,
                                          'endtime'=>$endtime,
-                                         'excerpt'=>preg_replace("~\[[0-9a-zA-Z_\\\/]+\]~","",get_the_excerpt())
+                                         'excerpt'=>preg_replace("~\[[0-9a-zA-Z\_\\\/\ \-]*\]\ *~","",get_the_excerpt())
                 ));
             }
         endwhile;
@@ -337,8 +487,6 @@ class Calendarize_It_Export_Events
             return strtotime($a['startdate']) - strtotime($b['startdate']);
         });
 
-        $this->console_log(count($result));
-
         if(count($result) < 1) {
             echo "<h3>No events found during this time period:<br>" . $this->start_date . " to " . $this->end_date . "</h3>";
             die;
@@ -347,14 +495,122 @@ class Calendarize_It_Export_Events
         return $result;
     }
 
+    /** 
+     * Automatically format paragraphs to apply to an image
+     */
+    private function imagettftext_paragraph($image, $font_size, $angle, $x, $y, $color, $font, $text, $line_char_limit, $lineoffset = 0, $last_paragraph = false) {
+        // Set line height
+        $lineheight = 20;
+
+        // Break text up into pieces
+        $lines = explode('|', wordwrap($text, $line_char_limit, '|'));
+
+        // Set Y according to current line offset for multi-text multi-line parsing
+        if( $lineoffset > 0) {
+            $y += ($lineoffset * $lineheight);
+        }
+
+        // If line limit (10) is reached, add elipsis and discontinue array
+        if( $last_paragraph == true && (count($lines) + $lineoffset) > 10) {
+            $last_line = 10 - $lineoffset;
+            $lines[$last_line] = substr($lines[$last_line], 0, -3) . "...";
+
+            for($i = count($lines); $i > $last_line; $i--) {
+                unset($lines[$i]);
+                $lines = array_values($lines);
+            }
+        }
+        // If line limit isn't hit, add elipsis to last possible line
+        else if( $last_paragraph == true && $text[-1] != "]") {
+            $last_line = count($lines);
+            if($lines[$last_line] != " " && $lines[$last_line] != "") {
+                $lines[$last_line] = trim($lines[$last_line]) . "...";
+            }
+            else {
+                $last_line--;
+                $lines[$last_line] = trim($lines[$last_line]) . "...";
+            }
+        }
+
+        // Loop through the lines and place them on the image
+        foreach ($lines as $line)
+        {
+            // Add text to image
+            imagettftext($image, $font_size, $angle, $x, $y, $color, $font, $line);
+    
+            // Increment Y by line height so the next line is below the previous line
+            $lineoffset++;
+            $y += $lineheight;
+        }
+        return $lineoffset;
+    }
+
+    /**
+     * Resize thumbnail images
+     */
+    private function resize_image($path,$max_width,$thumbnail = false)
+    {
+        $mime = getimagesize($path);
+        if($mime['mime']=='image/png') { 
+            $src_img = imagecreatefrompng($path);
+        }
+        if($mime['mime']=='image/jpg' || $mime['mime']=='image/jpeg' || $mime['mime']=='image/pjpeg') {
+            $src_img = imagecreatefromjpeg($path);
+        }
+    
+        $old_x          =   imageSX($src_img);
+        $old_y          =   imageSY($src_img);
+    
+        $new_width = $max_width;
+        $new_height = round( ($old_y / $old_x) * $new_width );
+
+        if($new_height < 177 && $thumbnail) {
+            $new_height = 177;
+            $new_width = round( ($old_x / $old_y) * $new_height );
+        }
+    
+        $dst_img        =   ImageCreateTrueColor($new_width,$new_height);
+        imagealphablending($dst_img, false);
+        imagesavealpha($dst_img, true);
+    
+        imagecopyresampled($dst_img,$src_img,0,0,0,0,$new_width,$new_height,$old_x,$old_y);
+
+        if($mime['mime']=='image/png') { 
+            $new_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/thumbnails/" . pathinfo($path, PATHINFO_FILENAME) . ".png";
+            imagepng($dst_img, $new_path, 9);
+            $new_image = imagecreatefrompng($new_path);
+        }
+        if($mime['mime']=='image/jpg' || $mime['mime']=='image/jpeg' || $mime['mime']=='image/pjpeg') {
+            $new_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/thumbnails/" . pathinfo($path, PATHINFO_FILENAME) . ".jpg";
+            imagejpeg($dst_img, $new_path, 90);
+            $new_image = imagecreatefromjpeg($new_path);
+        }
+
+        // Clean up
+        imagedestroy($src_img);
+        imagedestroy($dst_img);
+
+        return $new_image;
+    }
+
     /**
      * HTML Console log for testing
      */
     private function console_log($log) 
     {
-        echo '<script>';
-        echo 'console.log('. json_encode( $log ) .')';
-        echo '</script>';
+        $html = '
+        <script>
+            console.log('. json_encode( $log ) .')
+        </script>';
+        echo $html;
+    }
+
+    /** Sanitize filenames */
+    private function sanitize_filename($string) {
+        $string = str_replace(' ', '-', $string); // Replaces all spaces with hyphens.
+        $string = preg_replace('/[^A-Za-z0-9\-]/', '', $string); // Removes special chars.
+     
+        return preg_replace('/-+/', '-', $string); // Replaces multiple hyphens with single one.
     }
 }
 ?>
