@@ -2,7 +2,7 @@
 /**
  * Plugin Name:    Calendarize it! Event Export
  * Description:    Export Calendarize it! events into HTML file.
- * Version:        0.9.2
+ * Version:        0.10.1
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -14,7 +14,7 @@ require_once "vendor/autoload.php";
 /**
  * Define plugin version
  */ 
-define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.9.2');
+define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.10.1');
 
 /**
  * Create plugin wp-admin page and plugin directory
@@ -205,9 +205,29 @@ class Calendarize_It_Export_Events
 </html>';
 
         // Write HTML to file and display preview
-        $this->console_log($file_html);
         fwrite($event_file, stripslashes($file_html));
         echo $file_html;
+
+
+        // TODO: Create PDF of images generated in $this->image_array
+        $pdf_html = "
+        <table>";
+        for($i = 0; $i < count($this->image_array); $i += 4) {
+            $index = $i;
+            $pdf_html .= "<tr>";
+            for($x = $i; $x < ($index + 4); $x++) {
+                $pdf_html .= "
+                <td>
+                    <a href='" . $this->image_array[$x]['link'] . "'>
+                        <img src='" . $this->image_array[$x]['image_path'] . "'>
+                    </a>
+                </td>
+                ";
+            }
+            $pdf_html .= "</tr>";
+        }
+        $pdf_html .= "</table>";
+        $this->console_log("PDF HTML:\n$pdf_html");
 
         // If Download was clicked echo JavaScript to download file
         /*if( $_POST['export_events'] == 'Download' ) 
@@ -284,7 +304,6 @@ class Calendarize_It_Export_Events
         {
             $post_thumbnail = get_template_directory_uri().'/assets/images/common/placeholder.png';
         }
-        $this->console_log("Thumbnail directory: $post_thumbnail");
 
         $month = date('M', strtotime($event['startdate']));
 
@@ -329,8 +348,10 @@ class Calendarize_It_Export_Events
             str_replace("/","\\",$background_image);
         }
 
+        // Create new event image
         if(file_exists($image_file_path) == false) {
-            // Create image
+
+            // Create image file
             $image_main = ImageCreateTrueColor(303, 420);
             imagealphablending($image_main, false);
             imagesavealpha($image_main, true);
@@ -397,33 +418,10 @@ class Calendarize_It_Export_Events
 
         // Add image and link to array
         $this->image_array[] = [
-            "image" => $image_path,
+            "image_path" => $image_file_path,
+            "image_url" => $image_path,
             "link" => $permalink
         ];
-        
-        // Generate and return event HTML
-        /*$event_html = "
-        <a href=\"$permalink\"  class=\"masonryitem\">
-            <div class=\"item $section_name\">
-                <div class=\"image-wrapper\">
-                    <img src=\"$post_thumbnail\" />
-                </div>
-                <div class=\"date\">
-                    <div class=\"month\">$month</div>
-                    <div class=\"day\">$day</div>
-                </div>
-                <div class=\"title\">$title</div>
-                <div class=\"time\">
-                $time
-                </div>
-                <div class=\"excerpt\">
-                    <p>
-                        $excerpt
-                    </p>
-                </div>
-            </div>
-        </a>
-        ";*/
 
         // New HTML Format
         $event_html = "
@@ -605,7 +603,9 @@ class Calendarize_It_Export_Events
         echo $html;
     }
 
-    /** Sanitize filenames */
+    /** 
+     * Sanitize filenames 
+     */
     private function sanitize_filename($string) {
         $string = str_replace(' ', '-', $string); // Replaces all spaces with hyphens.
         $string = preg_replace('/[^A-Za-z0-9\-]/', '', $string); // Removes special chars.
