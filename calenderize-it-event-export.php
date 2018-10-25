@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name:    Calendarize it! Event Export
- * Description:    Export Calendarize it! events into HTML file.
- * Version:        0.9.2
+ * Description:    Export Calendarize it! events into PDF file.
+ * Version:        0.10.3
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -14,7 +14,7 @@ require_once "vendor/autoload.php";
 /**
  * Define plugin version
  */ 
-define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.9.2');
+define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.10.3');
 
 /**
  * Create plugin wp-admin page and plugin directory
@@ -161,9 +161,6 @@ class Calendarize_It_Export_Events
         // Get event file handle
         $event_file = $this->make_event_file();
 
-        // Get file download link
-        $file_url = get_site_url()."/wp-content/uploads/calendarize-it-event-export/".$this->filename;
-
         // Save HTML header scripts to variable
         $file_html = '
 <html>
@@ -188,7 +185,7 @@ class Calendarize_It_Export_Events
         </style>
     </head>
     <body>
-    <div class="row">';
+    <div class="row" id="event-preview">';
 
                 // Format each event and add to HTML variable
                 foreach($events as $event) 
@@ -205,29 +202,85 @@ class Calendarize_It_Export_Events
 </html>';
 
         // Write HTML to file and display preview
-        $this->console_log($file_html);
         fwrite($event_file, stripslashes($file_html));
         echo $file_html;
 
+
+        // Create PDF of images generated in $this->image_array
+        $pdf_html = "
+        <table>";
+        for($i = 0; $i < count($this->image_array); $i += 4) {
+            $index = $i;
+            $pdf_html .= "<tr>";
+            for($x = $i; $x < ($index + 4); $x++) {
+                if(!isset($this->image_array[$x])) {
+                    break;
+                }
+                $pdf_html .= "
+                <td>
+                    <a href=\"" . $this->image_array[$x]['link'] . "\" style=\"color: #fff;\">
+                        <img src=\"" . $this->image_array[$x]['image_path'] . "\" style=\"border: 1px solid #D3D3D3;\">
+                    </a>
+                </td>
+                ";
+            }
+            $pdf_html .= "</tr>";
+        }
+        $pdf_html .= "</table>";
+        $this->console_log("PDF HTML:\n$pdf_html");
+
+        // Create PDF file path
+        $pdf_file_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/events-" . $this->start_date . "-" . $this->end_date . ".pdf"; 
+        $this->console_log("PDF Link: $pdf_file_path");
+
+        // Make PDF file
+        $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->SetCreator('Calendarize it! Event Export');
+        $pdf->SetAuthor('MF Softworks');
+        $pdf->SetTitle('Events ' . $this->start_date . ' to ' . $this->end_date);
+        $pdf->SetSubject('Events ' . $this->start_date . ' to ' . $this->end_date);
+        $pdf->SetKeywords('Events, Project1095');
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+        $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+        $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+        $pdf->setImageScale(1.66);
+        $pdf->SetFont('helvetica','',11);
+        $pdf->AddPage();
+
+        // Write PDF HTML
+        $pdf->writeHTML($pdf_html, true, false, true, false, '');
+
+        // Save PDF file
+        $pdf->Output($pdf_file_path, 'F');
+        
+        // Get file download link
+        $file_url = get_site_url()."/wp-content/uploads/calendarize-it-event-export/events-" . $this->start_date . "-" . $this->end_date . ".pdf";
+        $filename = "events-" . $this->start_date . "-" . $this->end_date . ".pdf";
+        
         // If Download was clicked echo JavaScript to download file
-        /*if( $_POST['export_events'] == 'Download' ) 
+        if( $_POST['export_events'] == 'Download' ) 
         {
             ?>
+            <script
+            src="https://code.jquery.com/jquery-3.3.1.min.js"
+            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+            crossorigin="anonymous"></script>
             <script>
                 $(document).ready(function() {
                     function downloadFile(uri) {
-                        // Create <a> tag
-                        var link = "<a id='download-event-file' href='"+uri+"' download='<?php echo $this->filename; ?>' target='_blank' style='display: none;'><?php echo $this->filename; ?></a>";
-                        // Append <a> tag
+                        var link = "<a id='download-event-file' href='"+uri+"' style='display: none;'><?php echo $filename; ?></a>";
                         $("body").append(link);
                     }
                     downloadFile("<?php echo $file_url; ?>");
                     console.log("Clicking link");
                     document.getElementById('download-event-file').click();
-                })
+                });
+                $("#event-preview").prepend("<h3>Event PDF Download Started.</h3>");
             </script>
             <?php
-        }*/
+        }
     }
 
     /**
@@ -284,7 +337,6 @@ class Calendarize_It_Export_Events
         {
             $post_thumbnail = get_template_directory_uri().'/assets/images/common/placeholder.png';
         }
-        $this->console_log("Thumbnail directory: $post_thumbnail");
 
         $month = date('M', strtotime($event['startdate']));
 
@@ -321,6 +373,8 @@ class Calendarize_It_Export_Events
         $title = html_entity_decode($event['title']);
         $title = strip_tags($title);
 
+        $time = strip_tags($time);
+
         // Create image file path
         $image_file_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/" . $this->sanitize_filename($title) . ".png";
         
@@ -329,8 +383,10 @@ class Calendarize_It_Export_Events
             str_replace("/","\\",$background_image);
         }
 
+        // Create new event image
         if(file_exists($image_file_path) == false) {
-            // Create image
+
+            // Create image file
             $image_main = ImageCreateTrueColor(303, 420);
             imagealphablending($image_main, false);
             imagesavealpha($image_main, true);
@@ -393,37 +449,14 @@ class Calendarize_It_Export_Events
         }
         
         // Get Image URL path
-        $image_path = get_option('siteurl') . "/wp-content/uploads/calendarize-it-event-export/" . $this->sanitize_filename($title) . ".png";
+        $image_path = "/wp-content/uploads/calendarize-it-event-export/" . $this->sanitize_filename($title) . ".png";
 
         // Add image and link to array
         $this->image_array[] = [
-            "image" => $image_path,
+            "image_path" => $image_file_path,
+            "image_url" => $image_path,
             "link" => $permalink
         ];
-        
-        // Generate and return event HTML
-        /*$event_html = "
-        <a href=\"$permalink\"  class=\"masonryitem\">
-            <div class=\"item $section_name\">
-                <div class=\"image-wrapper\">
-                    <img src=\"$post_thumbnail\" />
-                </div>
-                <div class=\"date\">
-                    <div class=\"month\">$month</div>
-                    <div class=\"day\">$day</div>
-                </div>
-                <div class=\"title\">$title</div>
-                <div class=\"time\">
-                $time
-                </div>
-                <div class=\"excerpt\">
-                    <p>
-                        $excerpt
-                    </p>
-                </div>
-            </div>
-        </a>
-        ";*/
 
         // New HTML Format
         $event_html = "
@@ -477,7 +510,7 @@ class Calendarize_It_Export_Events
                                          'enddate'=>$enddate,
                                          'starttime'=>$starttime,
                                          'endtime'=>$endtime,
-                                         'excerpt'=>preg_replace("~\[[0-9a-zA-Z\_\\\/\ \-]*\]\ *~","",get_the_excerpt())
+                                         'excerpt'=>preg_replace("~\[[0-9a-zA-Z\_\\\/\ \-\=\"]*\]\ *~","",get_the_excerpt())
                 ));
             }
         endwhile;
@@ -605,7 +638,9 @@ class Calendarize_It_Export_Events
         echo $html;
     }
 
-    /** Sanitize filenames */
+    /** 
+     * Sanitize filenames 
+     */
     private function sanitize_filename($string) {
         $string = str_replace(' ', '-', $string); // Replaces all spaces with hyphens.
         $string = preg_replace('/[^A-Za-z0-9\-]/', '', $string); // Removes special chars.
