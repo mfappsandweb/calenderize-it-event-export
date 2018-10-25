@@ -2,7 +2,7 @@
 /**
  * Plugin Name:    Calendarize it! Event Export
  * Description:    Export Calendarize it! events into HTML file.
- * Version:        0.10.2
+ * Version:        0.10.3
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -14,7 +14,7 @@ require_once "vendor/autoload.php";
 /**
  * Define plugin version
  */ 
-define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.10.2');
+define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.10.3');
 
 /**
  * Create plugin wp-admin page and plugin directory
@@ -185,7 +185,7 @@ class Calendarize_It_Export_Events
         </style>
     </head>
     <body>
-    <div class="row">';
+    <div class="row" id="event-preview">';
 
                 // Format each event and add to HTML variable
                 foreach($events as $event) 
@@ -257,24 +257,27 @@ class Calendarize_It_Export_Events
         
         // Get file download link
         $file_url = get_site_url()."/wp-content/uploads/calendarize-it-event-export/events-" . $this->start_date . "-" . $this->end_date . ".pdf";
+        $filename = "events-" . $this->start_date . "-" . $this->end_date . ".pdf";
         
-
         // If Download was clicked echo JavaScript to download file
         if( $_POST['export_events'] == 'Download' ) 
         {
             ?>
+            <script
+            src="https://code.jquery.com/jquery-3.3.1.min.js"
+            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+            crossorigin="anonymous"></script>
             <script>
                 $(document).ready(function() {
                     function downloadFile(uri) {
-                        // Create <a> tag
-                        var link = "<a id='download-event-file' href='"+uri+"' download='<?php echo $this->filename; ?>' target='_blank' style='display: none;'><?php echo $this->filename; ?></a>";
-                        // Append <a> tag
+                        var link = "<a id='download-event-file' href='"+uri+"' style='display: none;'><?php echo $filename; ?></a>";
                         $("body").append(link);
                     }
                     downloadFile("<?php echo $file_url; ?>");
                     console.log("Clicking link");
                     document.getElementById('download-event-file').click();
-                })
+                });
+                $("#event-preview").prepend("<h3>Event PDF Download Started.</h3>");
             </script>
             <?php
         }
@@ -369,6 +372,8 @@ class Calendarize_It_Export_Events
 
         $title = html_entity_decode($event['title']);
         $title = strip_tags($title);
+
+        $time = strip_tags($time);
 
         // Create image file path
         $image_file_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/" . $this->sanitize_filename($title) . ".png";
