@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name:    Calendarize it! Event Export
+ * Plugin Name:    Events to PDF
  * Description:    Export Calendarize it! events into PDF file.
- * Version:        0.10.3
+ * Version:        0.11.2
  * Author:         MF Softworks
  * Author URI:     https://mf.nygmarosebeauty.com/
  * License:        GPLv3
@@ -14,7 +14,7 @@ require_once "vendor/autoload.php";
 /**
  * Define plugin version
  */ 
-define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.10.3');
+define('CALENDARIZE_IT_EVENT_EXPORT_VERSION', '0.11.2');
 
 /**
  * Create plugin wp-admin page and plugin directory
@@ -29,7 +29,6 @@ class Calendarize_It_Export_Events
      */
     private $start_date;
     private $end_date;
-    private $filename;
     private $image_array = [];
 
     /**
@@ -56,17 +55,6 @@ class Calendarize_It_Export_Events
         $dir = wp_upload_dir()['basedir'] . '/calendarize-it-event-export/thumbnails';
         wp_mkdir_p($dir);
     }
-    
-    /**
-     * Create event file for writing and pass back file handle
-     */
-    private function make_event_file() 
-    {
-        // File path format: WP uploads directory -> calendarize-it-event-export sub-folder -> event export specific file
-        $this->filename = "event-" . $this->start_date."-".$this->end_date.".html";
-        $event_file_path = wp_upload_dir()['basedir'] . "/calendarize-it-event-export/" . $this->filename;
-        return fopen($event_file_path,"w");
-    }
 
     /**
      * Create HTML for admin page form
@@ -78,7 +66,7 @@ class Calendarize_It_Export_Events
 
         ?>
         <div class="wrap">
-            <h1>Calendarize it! Event Export</h1>
+            <h1>Events to PDF Exporter</h1>
             <form method="post">
                 <table class="optiontable form-table">
                     <tr valign="top">
@@ -115,12 +103,13 @@ class Calendarize_It_Export_Events
     public function create_admin_page() 
     {
         // Add page under "Tools"
-        add_management_page(
-            'Calendarize it! Event Export',
-            'Calendarize it! Event Export',
+        add_menu_page(
+            'Events to PDF',
+            'Events to PDF',
             'publish_events',
-            'calendarize-it-event-export',
-            array( 'Calendarize_It_Export_Events', 'create_admin_page_html' )
+            'events-to-pdf',
+            array( 'Calendarize_It_Export_Events', 'create_admin_page_html' ),
+            "dashicons-calendar-alt"
         );
     }
 
@@ -158,35 +147,32 @@ class Calendarize_It_Export_Events
      */
     private function build_event_html($events) 
     {
-        // Get event file handle
-        $event_file = $this->make_event_file();
-
         // Save HTML header scripts to variable
         $file_html = '
-<html>
-    <head>
-        <meta charset="utf-8"/>
-        <style>
-        * {
-            box-sizing: border-box;
-        }
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <style>
+                * {
+                    box-sizing: border-box;
+                }
+            
+                .column {
+                    float: left;
+                    width: 25%;
+                    padding: 5px;
+                }
 
-        .column {
-            float: left;
-            width: 25%;
-            padding: 5px;
-        }
-        
-        .row::after {
-            content: "";
-            clear: both;
-            display: table;
-        }
-        </style>
-    </head>
-    <body>
-    <div class="row" id="event-preview">';
-
+                .row::after {
+                    content: "";
+                    clear: both;
+                    display: table;
+                }
+                </style>
+            </head>
+            <body>
+            <div class="row" id="event-preview">';
+            
                 // Format each event and add to HTML variable
                 foreach($events as $event) 
                 {
@@ -194,15 +180,14 @@ class Calendarize_It_Export_Events
                         $file_html .= $this->display_event($event);
                     }
                 }
+            
+                // Add HTML footer scripts to file
+                $file_html .= '
+                </div>
+            </body>
+        </html>';
 
-        // Add HTML footer scripts to file
-        $file_html .= '
-        </div>
-    </body>
-</html>';
-
-        // Write HTML to file and display preview
-        fwrite($event_file, stripslashes($file_html));
+        // Display preview
         echo $file_html;
 
 
@@ -270,7 +255,7 @@ class Calendarize_It_Export_Events
             <script>
                 $(document).ready(function() {
                     function downloadFile(uri) {
-                        var link = "<a id='download-event-file' href='"+uri+"' style='display: none;'><?php echo $filename; ?></a>";
+                        var link = "<a id='download-event-file' href='"+uri+"' style='display: none;' download='<?php echo $filename; ?>'><?php echo $filename; ?></a>";
                         $("body").append(link);
                     }
                     downloadFile("<?php echo $file_url; ?>");
@@ -365,8 +350,9 @@ class Calendarize_It_Export_Events
             }
         }
 
-        // Replace HTML encoding in strings
-        $excerpt = str_replace("[&hellip;]", "", $event['excerpt']);
+        // Replace uneeded data in strings
+        $excerpt = preg_replace("~\[[A-Za-z0-9\_\-\=\:\;\ \\\/\"\”\″\&\#]*\]\ *~","",$event['excerpt']);
+        $excerpt = str_replace("&#x1f440;","",$excerpt);
         $excerpt = html_entity_decode($excerpt);
         $excerpt = strip_tags($excerpt);
 
@@ -510,7 +496,7 @@ class Calendarize_It_Export_Events
                                          'enddate'=>$enddate,
                                          'starttime'=>$starttime,
                                          'endtime'=>$endtime,
-                                         'excerpt'=>preg_replace("~\[[0-9a-zA-Z\_\\\/\ \-\=\"]*\]\ *~","",get_the_excerpt())
+                                         'excerpt'=>get_the_excerpt()
                 ));
             }
         endwhile;
